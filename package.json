@@ -1,0 +1,40 @@
+{
+  "name": "artsyapi",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/nimbusphagia/ArtsyAPI#readme",
+  "bugs": {
+    "url": "https://github.com/nimbusphagia/ArtsyAPI/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nimbusphagia/ArtsyAPI.git"
+  },
+  "license": "ISC",
+  "author": "nimbusphagia",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "postinstall": "prisma generate",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:migrate": "docker compose exec api npx prisma migrate dev",
+    "db:studio": "docker compose exec api npx prisma studio"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "express": "^5.2.1",
+    "pg": "^8.22.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "prisma": "^7.8.0",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}

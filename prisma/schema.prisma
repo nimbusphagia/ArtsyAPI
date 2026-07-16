@@ -1,0 +1,119 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @default(uuid(7)) @db.Uuid
+  email     String   @unique @db.VarChar(255)
+  password  String
+  birthdate DateTime @db.Date
+  firstName String
+  lastName  String
+  nickname  String?
+  createdAt DateTime @default(now())
+  active    Boolean  @default(true)
+
+  followedBy User[] @relation("UserFollows")
+  following  User[] @relation("UserFollows")
+
+  blocking     User[]        @relation("UserBlocks")
+  blockedBy    User[]        @relation("UserBlocks")
+
+  posts        Post[]
+  reposts      Repost[]
+  comments     Comment[]
+  postLikes    PostLike[]
+  commentLikes CommentLike[]
+  collections  Collection[]
+}
+
+model Post {
+  id          Int      @id @default(autoincrement())
+  publicId    String   @unique @default(uuid(7)) @db.Uuid
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id],onDelete: Cascade)
+  description String?
+  createdAt   DateTime @default(now())
+  private     Boolean  @default(false)
+  views       Int      @default(0)
+
+  mediaId Int
+  media   Media @relation(fields: [mediaId], references: [id])
+
+  comments     Comment[]
+  likes        PostLike[]
+  reposts      Repost[]
+  collections   Collection[] 
+  }
+
+model Media {
+  id           Int      @id @default(autoincrement())
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
+  cloudinaryId String   @unique                             
+  assetId      String   @unique                            
+  resourceType String                                     
+  format       String                                    
+  url          String                                   
+  thumbnail    String?
+  width        Int?
+  height       Int?
+  bytes        Int                                     
+  duration     Float?                                 
+  createdAt    DateTime @default(now())
+
+  posts        Post[]
+}
+
+model Repost {
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete:Cascade)
+
+  @@id([userId, postId])
+}
+
+model Comment {
+  id     Int           @id @default(autoincrement())
+  postId Int
+  post   Post          @relation(fields: [postId], references: [id], onDelete:Cascade)
+  userId Int
+  user   User          @relation(fields: [userId], references: [id], onDelete:Cascade)
+  text   String
+  likes  CommentLike[]
+}
+
+model PostLike {
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete:Cascade)
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
+
+  @@id([userId, postId])
+}
+
+model CommentLike {
+  commentId Int
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete:Cascade)
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id], onDelete:Cascade)
+
+  @@id([userId, commentId])
+}
+
+model Collection {
+  id          Int     @id @default(autoincrement())
+  userId      Int
+  user        User    @relation(fields: [userId], references: [id], onDelete:Cascade)
+  name        String
+  description String
+  active      Boolean @default(false)
+  posts       Post[]
+}
