@@ -21,6 +21,8 @@
     "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:migrate": "docker compose exec api npx prisma migrate dev",
+    "db:generate": "docker compose exec api npx prisma generate",
+    "db:deploy": "docker compose exec api npx prisma migrate deploy",
     "db:studio": "docker compose exec api npx prisma studio"
   },
   "dependencies": {

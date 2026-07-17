@@ -1,8 +1,8 @@
 import z from "zod";
-import { UserLazyResponseSchema } from "../../users/users.validators";
+import { ProfileLazyResponseSchema } from "../../profiles/profiles.validators";
 
 export const LikeResponseSchema = z.object({
-  user: UserLazyResponseSchema,
+  owner: ProfileLazyResponseSchema,
   createdAt: z.coerce.date(),
 });
 export type LikeRes = z.infer<typeof LikeResponseSchema>;

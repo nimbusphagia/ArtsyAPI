@@ -16,17 +16,26 @@ model User {
   birthdate DateTime @db.Date
   firstName String
   lastName  String
-  nickname  String?
-  profilePictureId Int
-  profilePicture Media @relation(fields:[profilePictureId], references:[id])
   createdAt DateTime @default(now())
   active    Boolean  @default(true)
 
-  followedBy User[] @relation("UserFollows")
-  following  User[] @relation("UserFollows")
+  profile Profile? 
+  }
+model Profile{
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @default(uuid(7)) @db.Uuid
+  user      User     @relation(fields:[userId], references:[id], onDelete:Cascade)
+  userId     Int  @unique
+  nickname  String
+  pictureId Int
+  picture Asset @relation(fields:[pictureId], references:[id])
+  createdAt DateTime @default(now())
 
-  blocking     User[]        @relation("UserBlocks")
-  blockedBy    User[]        @relation("UserBlocks")
+  followedBy Profile[] @relation("UserFollows")
+  following  Profile[] @relation("UserFollows")
+
+  blocking     Profile[]        @relation("UserBlocks")
+  blockedBy    Profile[]        @relation("UserBlocks")
 
   posts        Post[]
   reposts      Repost[]
@@ -34,13 +43,15 @@ model User {
   postLikes    PostLike[]
   commentLikes CommentLike[]
   collections  Collection[]
+  messages  Message[]
+  chatMember  ChatMember[]
 }
 
 model Post {
   id          Int      @id @default(autoincrement())
   publicId    String   @unique @default(uuid(7)) @db.Uuid
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id],onDelete: Cascade)
+  authorId      Int
+  author        Profile     @relation(fields: [authorId], references: [id],onDelete: Cascade)
   description String?
   createdAt   DateTime @default(now())
   private     Boolean  @default(false)
@@ -51,13 +62,14 @@ model Post {
   likes        PostLike[]
   reposts      Repost[]
   collections   Collection[] 
+  messages Message[]
   }
 
 model Media {
   id           Int      @id @default(autoincrement())
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
   cloudinaryId String   @unique                             
-  assetId      String   @unique                            
+  cloudinaryAssetId      String   @unique                            
   resourceType String                                     
   format       String                                    
   url          String                                   
@@ -70,17 +82,30 @@ model Media {
 
   postId      Int?
   post        Post? @relation(fields:[postId], references:[id], onDelete:Cascade)
-  users        User[]
+  asset   Asset[] 
+}
+model Asset {
+   id           Int      @id @default(autoincrement())
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
+  type     AssetType 
+  media  Media? @relation(fields:[mediaId], references:[id], onDelete:SetNull)
+  mediaId Int?
+  profile Profile[]
+}
+
+enum AssetType {
+  PROFILE_PICTURE
 }
 
 model Repost {
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
+  reposterId Int
+  reposter   Profile @relation(fields: [reposterId], references: [id], onDelete:Cascade)
   postId Int
   post   Post @relation(fields: [postId], references: [id], onDelete:Cascade)
+  createdAt DateTime @default(now())
 
-  @@id([userId, postId])
+  @@id([reposterId, postId])
 }
 
 model Comment {
@@ -88,8 +113,8 @@ model Comment {
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
   postId Int
   post   Post          @relation(fields: [postId], references: [id], onDelete:Cascade)
-  userId Int
-  user   User          @relation(fields: [userId], references: [id], onDelete:Cascade)
+  authorId Int
+  author   Profile          @relation(fields: [authorId], references: [id], onDelete:Cascade)
   text   String
   createdAt    DateTime @default(now())
   likes  CommentLike[]
@@ -99,32 +124,78 @@ model PostLike {
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
   postId Int
   post   Post @relation(fields: [postId], references: [id], onDelete:Cascade)
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
+  ownerId Int
+  owner   Profile @relation(fields: [ownerId], references: [id], onDelete:Cascade)
   createdAt    DateTime @default(now())
 
-  @@id([userId, postId])
+  @@id([ownerId, postId])
 }
 
 model CommentLike {
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
   commentId Int
   comment   Comment @relation(fields: [commentId], references: [id], onDelete:Cascade)
-  userId    Int
-  user      User    @relation(fields: [userId], references: [id], onDelete:Cascade)
+  ownerId    Int
+  owner      Profile    @relation(fields: [ownerId], references: [id], onDelete:Cascade)
   createdAt    DateTime @default(now())
 
-  @@id([userId, commentId])
+  @@id([ownerId, commentId])
 }
 
 model Collection {
   id          Int     @id @default(autoincrement())
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
-  userId      Int
-  user        User    @relation(fields: [userId], references: [id], onDelete:Cascade)
+  ownerId      Int
+  owner        Profile    @relation(fields: [ownerId], references: [id], onDelete:Cascade)
   name        String
   description String
   active      Boolean @default(false)
   posts       Post[]
+  messages Message[]
   createdAt    DateTime @default(now())
+}
+// Chat
+model Chat {
+  id          Int     @id @default(autoincrement())
+  publicId          String        @unique @default(uuid(7)) @db.Uuid
+  createdAt   DateTime      @default(now())
+  members     ChatMember[]
+  messages    Message[]
+}
+
+model ChatMember {
+  id          Int     @id @default(autoincrement())
+  publicId          String        @unique @default(uuid(7)) @db.Uuid
+  chat   Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId Int        
+  profile   Profile?          @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  profileId Int?        
+  isArchived  Boolean  @default(false)
+}
+
+model Message {
+  id          Int     @id @default(autoincrement())
+  publicId          String        @unique @default(uuid(7)) @db.Uuid
+  chat      Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId    Int          
+  owner    Profile?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId  Int?          
+  text   String?
+  type      MessageType @default(TEXT)
+  createdAt DateTime        @default(now())
+  replyTo   Message?    @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replyToId Int?         
+  replies   Message[]   @relation("MessageReplies")
+  active Boolean @default(true)
+  post Post? @relation(fields:[postId], references:[id])
+  postId Int?
+  collection Collection? @relation(fields:[collectionId], references:[id])
+  collectionId Int?
+}
+
+enum MessageType {
+  TEXT
+  POST
+  COLLECTION
+  EVENT
 }
