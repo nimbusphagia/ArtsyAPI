@@ -17,6 +17,8 @@ model User {
   firstName String
   lastName  String
   nickname  String?
+  profilePictureId Int
+  profilePicture Media @relation(fields:[profilePictureId], references:[id])
   createdAt DateTime @default(now())
   active    Boolean  @default(true)
 
@@ -44,9 +46,7 @@ model Post {
   private     Boolean  @default(false)
   views       Int      @default(0)
 
-  mediaId Int
-  media   Media @relation(fields: [mediaId], references: [id])
-
+  media        Media[] 
   comments     Comment[]
   likes        PostLike[]
   reposts      Repost[]
@@ -68,12 +68,14 @@ model Media {
   duration     Float?                                 
   createdAt    DateTime @default(now())
 
-  posts        Post[]
+  postId      Int?
+  post        Post? @relation(fields:[postId], references:[id], onDelete:Cascade)
+  users        User[]
 }
 
 model Repost {
   userId Int
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
   postId Int
   post   Post @relation(fields: [postId], references: [id], onDelete:Cascade)
 
@@ -87,6 +89,7 @@ model Comment {
   userId Int
   user   User          @relation(fields: [userId], references: [id], onDelete:Cascade)
   text   String
+  createdAt    DateTime @default(now())
   likes  CommentLike[]
 }
 
@@ -95,6 +98,7 @@ model PostLike {
   post   Post @relation(fields: [postId], references: [id], onDelete:Cascade)
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
+  createdAt    DateTime @default(now())
 
   @@id([userId, postId])
 }
@@ -104,6 +108,7 @@ model CommentLike {
   comment   Comment @relation(fields: [commentId], references: [id], onDelete:Cascade)
   userId    Int
   user      User    @relation(fields: [userId], references: [id], onDelete:Cascade)
+  createdAt    DateTime @default(now())
 
   @@id([userId, commentId])
 }
@@ -116,4 +121,5 @@ model Collection {
   description String
   active      Boolean @default(false)
   posts       Post[]
+  createdAt    DateTime @default(now())
 }
