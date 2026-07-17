@@ -1,7 +1,7 @@
 import z from "zod";
 import { ProfilePictureSchema } from "./profilePictures/profilePictures.validators";
 import { PostLazyResponseSchema } from "../posts/posts.validators";
-import { RepostLazyResponseSchema } from "../reposts/reposts.validators";
+import { RepostLazyResponseSchema } from "../posts/reposts/reposts.validators";
 import { CollectionLazyResponseSchema } from "../collections/collections.validators";
 // Lazy
 export const ProfileLazyResponseSchema = z.object({
@@ -12,9 +12,8 @@ export const ProfileLazyResponseSchema = z.object({
 });
 export type ProfileLazyRes = z.infer<typeof ProfileLazyResponseSchema>;
 
-// Profile
+// With relations(loaded lazily)
 export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
-  // Loaded Lazily
   followedBy: ProfileLazyResponseSchema.array(),
   following: ProfileLazyResponseSchema.array(),
   blocking: ProfileLazyResponseSchema.array(),

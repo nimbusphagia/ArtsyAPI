@@ -1,6 +1,6 @@
 import z from "zod";
 import { MediaResponseSchema } from "../media/media.validators";
-import { CommentResponseSchema } from "../comments/comments.validators";
+import { CommentResponseSchema } from "./comments/comments.validators";
 import { LikeResponseSchema } from "./likes/likes.validators";
 import { ProfileLazyResponseSchema } from "../profiles/profiles.validators";
 
@@ -12,7 +12,8 @@ const PostBasicSchema = z.object({
   private: z.boolean(),
   views: z.number().nonnegative(),
 });
-// Posts with relations
+
+// With relations
 export const PostResponseSchema = PostBasicSchema.extend({
   media: MediaResponseSchema.array(),
   comments: CommentResponseSchema.array(),
@@ -20,7 +21,7 @@ export const PostResponseSchema = PostBasicSchema.extend({
 });
 export type PostRes = z.infer<typeof PostResponseSchema>;
 
-// Posts without relations
+// Lazy
 export const PostLazyResponseSchema = PostBasicSchema.extend({
   thumbnails: z.url().array(),
   stats: z.object({

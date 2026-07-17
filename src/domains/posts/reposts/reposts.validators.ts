@@ -2,7 +2,7 @@ import z from "zod";
 import {
   PostLazyResponseSchema,
   PostResponseSchema,
-} from "../posts/posts.validators";
+} from "../posts.validators";
 
 // With relations
 export const RepostResponseSchema = z.object({

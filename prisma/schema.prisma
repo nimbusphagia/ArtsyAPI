@@ -40,9 +40,10 @@ model Profile{
   posts        Post[]
   reposts      Repost[]
   comments     Comment[]
+  collections  Collection[]
   postLikes    PostLike[]
   commentLikes CommentLike[]
-  collections  Collection[]
+  collectionLikes CollectionLike[]
   messages  Message[]
   chatMember  ChatMember[]
 }
@@ -152,7 +153,18 @@ model Collection {
   active      Boolean @default(false)
   posts       Post[]
   messages Message[]
+  likes  CollectionLike[]
   createdAt    DateTime @default(now())
+}
+model CollectionLike {
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
+  collectionId Int
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete:Cascade)
+  ownerId    Int
+  owner      Profile    @relation(fields: [ownerId], references: [id], onDelete:Cascade)
+  createdAt    DateTime @default(now())
+
+  @@id([ownerId, collectionId])
 }
 // Chat
 model Chat {
