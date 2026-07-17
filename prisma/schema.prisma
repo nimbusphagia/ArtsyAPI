@@ -46,6 +46,8 @@ model Profile{
   collectionLikes CollectionLike[]
   messages  Message[]
   chatMember  ChatMember[]
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsSent Notification[] @relation("NotificationActor")
 }
 
 model Post {
@@ -64,6 +66,8 @@ model Post {
   reposts      Repost[]
   collections   Collection[] 
   messages Message[]
+  notifications Notification[]
+  @@index([authorId, createdAt])
   }
 
 model Media {
@@ -107,6 +111,7 @@ model Repost {
   createdAt DateTime @default(now())
 
   @@id([reposterId, postId])
+  @@index([postId])
 }
 
 model Comment {
@@ -119,6 +124,8 @@ model Comment {
   text   String
   createdAt    DateTime @default(now())
   likes  CommentLike[]
+  notifications Notification[]
+  @@index([postId, createdAt])
 }
 
 model PostLike {
@@ -130,6 +137,7 @@ model PostLike {
   createdAt    DateTime @default(now())
 
   @@id([ownerId, postId])
+  @@index([postId])
 }
 
 model CommentLike {
@@ -141,6 +149,7 @@ model CommentLike {
   createdAt    DateTime @default(now())
 
   @@id([ownerId, commentId])
+   @@index([commentId])
 }
 
 model Collection {
@@ -155,6 +164,7 @@ model Collection {
   messages Message[]
   likes  CollectionLike[]
   createdAt    DateTime @default(now())
+  notifications Notification[]
 }
 model CollectionLike {
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
@@ -165,6 +175,7 @@ model CollectionLike {
   createdAt    DateTime @default(now())
 
   @@id([ownerId, collectionId])
+  @@index([collectionId])
 }
 // Chat
 model Chat {
@@ -183,6 +194,7 @@ model ChatMember {
   profile   Profile?          @relation(fields: [profileId], references: [id], onDelete: SetNull)
   profileId Int?        
   isArchived  Boolean  @default(false)
+  @@unique([chatId, profileId])
 }
 
 model Message {
@@ -203,6 +215,7 @@ model Message {
   postId Int?
   collection Collection? @relation(fields:[collectionId], references:[id])
   collectionId Int?
+  @@index([chatId,createdAt])
 }
 
 enum MessageType {
@@ -210,4 +223,35 @@ enum MessageType {
   POST
   COLLECTION
   EVENT
+}
+// Notifications
+model Notification {
+  id          Int              @id @default(autoincrement())
+  publicId    String           @unique @default(uuid(7)) @db.Uuid
+  recipientId Int
+  recipient   Profile          @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorId     Int
+  actor       Profile          @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  postId      Int?
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId   Int?
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+collectionId      Int?
+  collection        Collection?            @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  @@index([recipientId, read, createdAt])
+}
+
+enum NotificationType {
+  LIKE_POST
+  LIKE_COMMENT
+  LIKE_COLLECTION
+  COMMENT
+  REPOST
+  NEW_POST
+  NEW_COLLECTION
+  FOLLOW
 }

@@ -1,7 +1,7 @@
-import app from "./config/app";
+import { server } from "./config/server";
+import io from "./config/socket";
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
