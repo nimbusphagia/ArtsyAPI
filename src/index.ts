@@ -1,7 +1,7 @@
-import app from "./app";
+import app from "./config/app";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on the coolest port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

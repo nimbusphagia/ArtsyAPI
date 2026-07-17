@@ -74,6 +74,7 @@ model Media {
 }
 
 model Repost {
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
   postId Int
@@ -84,6 +85,7 @@ model Repost {
 
 model Comment {
   id     Int           @id @default(autoincrement())
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
   postId Int
   post   Post          @relation(fields: [postId], references: [id], onDelete:Cascade)
   userId Int
@@ -94,6 +96,7 @@ model Comment {
 }
 
 model PostLike {
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
   postId Int
   post   Post @relation(fields: [postId], references: [id], onDelete:Cascade)
   userId Int
@@ -104,6 +107,7 @@ model PostLike {
 }
 
 model CommentLike {
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
   commentId Int
   comment   Comment @relation(fields: [commentId], references: [id], onDelete:Cascade)
   userId    Int
@@ -115,6 +119,7 @@ model CommentLike {
 
 model Collection {
   id          Int     @id @default(autoincrement())
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
   userId      Int
   user        User    @relation(fields: [userId], references: [id], onDelete:Cascade)
   name        String
