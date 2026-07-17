@@ -1,9 +1,8 @@
 import z from "zod";
 import { MediaResponseSchema } from "../media/media.validators";
-import { PostResponseSchema } from "../posts/posts.validators";
-import { CommentResponseSchema } from "../comments/comments.validators";
-import { CollectionResponseSchema } from "../collections/collections.validators";
-import { RepostResponseSchema } from "../reposts/reposts.validators";
+import { PostLazyResponseSchema } from "../posts/posts.validators";
+import { CollectionLazyResponseSchema } from "../collections/collections.validators";
+import { RepostLazyResponseSchema } from "../reposts/reposts.validators";
 
 // Register
 export const RegisterResponseSchema = z
@@ -29,12 +28,9 @@ export const LoginResponseSchema = z.object({
 });
 export type UserLoginRes = z.infer<typeof LoginResponseSchema>;
 
-// User without relations
+// Lazy
 export const UserLazyResponseSchema = z.object({
   publicId: z.uuidv7(),
-  email: z.email(),
-  password: z.string(),
-  birthdate: z.date(),
   firstName: z.string(),
   lastName: z.string(),
   nickname: z.string().optional(),
@@ -45,13 +41,15 @@ export type UserLazyRes = z.infer<typeof UserLazyResponseSchema>;
 
 // User with all public fields
 export const UserResponseSchema = UserLazyResponseSchema.extend({
+  email: z.email(),
+  birthdate: z.date(),
+  // Loaded Lazily
   following: UserLazyResponseSchema.array(),
   followedBy: UserLazyResponseSchema.array(),
   blocking: UserLazyResponseSchema.array(),
   blockedBy: UserLazyResponseSchema.array(),
-  posts: PostResponseSchema.array(),
-  reposts: RepostResponseSchema.array(),
-  comments: CommentResponseSchema.array(),
-  collections: CollectionResponseSchema.array(),
+  posts: PostLazyResponseSchema.array(),
+  reposts: RepostLazyResponseSchema.array(),
+  collections: CollectionLazyResponseSchema.array(),
 });
 export type UserResponse = z.infer<typeof UserResponseSchema>;
