@@ -1,6 +1,6 @@
 import { Router } from "express";
 import passport from "passport";
-import { oauthCallback, refresh } from "./auth.controller";
+import { oauthCallback, refresh, register, login } from "./auth.controller";
 
 const router = Router();
 
@@ -22,7 +22,7 @@ router.get(
 );
 
 router.post("/refresh", refresh);
-router.post("/register", refresh);
-router.post("/login", refresh);
+router.post("/register", register);
+router.post("/login", login);
 
 export default router;

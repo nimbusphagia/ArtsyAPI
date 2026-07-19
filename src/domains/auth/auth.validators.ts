@@ -28,11 +28,20 @@ export type TokenRotateReturn = z.infer<typeof TokenRotateReturnSchema>;
 export const RegisterRequestSchema = z
   .object({
     email: z.email(),
-    password: z.string().min(8).max(20),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(20, "Password must be at most 20 characters")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number")
+      .regex(
+        /[^a-zA-Z0-9]/,
+        "Password must contain at least one special character",
+      ),
     confirmPassword: z.string(),
     firstName: z.string().min(2).max(20).nonempty(),
     lastName: z.string(),
-    createdAt: z.coerce.date(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",

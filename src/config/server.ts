@@ -2,6 +2,8 @@ import express from "express";
 import http from "http";
 import authRouter from "../domains/auth/auth.routes";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+import { ErrorHandler } from "./errors/errorHandler";
 
 const app = express();
 const server = http.createServer(app);
@@ -15,11 +17,10 @@ const corsOptions = {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
+app.use(cookieParser());
 
-app.use("/auth", authRouter);
+app.use("/", authRouter);
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
-});
+app.use(ErrorHandler);
 
 export { app, server };
