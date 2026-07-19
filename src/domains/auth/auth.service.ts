@@ -36,7 +36,7 @@ export async function createUser(data: RegisterReq): Promise<UserRes> {
 // Login with JWT
 export async function authorizeUser(data: LoginReq): Promise<PublicId> {
   const user = await prisma.user.findUnique({
-    where: { email: data.email },
+    where: { email: data.email, active: true },
     select: { publicId: true, password: true },
   });
   if (!user) throw new NotFoundError("User not found.");
@@ -67,8 +67,8 @@ export async function editUserInfo(
         currentUserId,
       );
     }
-    if (email) {
-      return editUserEmail({ email }, currentUserId);
+    if (email && password) {
+      return editUserEmail({ email, password }, currentUserId);
     }
   }
 
@@ -86,7 +86,7 @@ async function editUserPassword(
 
   await blockOauthUser(currentUserId);
   const user = await prisma.user.findUnique({
-    where: { publicId: currentUserId },
+    where: { publicId: currentUserId, active: true },
     select: { password: true },
   });
   const validated = await compare(password, user?.password!);
@@ -102,21 +102,29 @@ async function editUserPassword(
 
 // Edit Email
 async function editUserEmail(
-  { email }: UserEditReq,
+  { email, password }: UserEditReq,
   currentUserId: string,
 ): Promise<UserRes> {
-  if (!email) throw new ValidationError("Invalid data");
+  if (!email || !password) throw new ValidationError("Invalid data");
 
-  const isEmailUnique = await prisma.user.findUnique({
+  const emailTaken = await prisma.user.findUnique({
     where: {
       email,
-      publicId: currentUserId,
     },
     select: { id: true },
   });
-  if (!isEmailUnique) throw new ConflictError("Invalid data");
+  if (emailTaken) throw new ConflictError("Invalid data");
+  const user = await prisma.user.findUnique({
+    where: { publicId: currentUserId, active: true },
+    select: { password: true },
+  });
+  if (!user) throw new NotFoundError("Invalid user");
+
+  const validated = await compare(password, user.password!);
+  if (!validated) throw new UnauthorizedError("Unauthorized request");
+
   return prisma.user.update({
-    where: { id: isEmailUnique.id },
+    where: { publicId: currentUserId },
     data: { email },
   });
 }
