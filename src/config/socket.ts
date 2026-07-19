@@ -1,9 +1,7 @@
 import { Server } from "socket.io";
 import { server } from "./server";
 
-const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_URL, credentials: true },
-});
+const io = new Server(server);
 
 io.on("connection", (socket) => {
   console.log("client connected", socket.id);

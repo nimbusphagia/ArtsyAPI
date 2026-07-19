@@ -12,15 +12,15 @@ model User {
   id        Int      @id @default(autoincrement())
   publicId  String   @unique @default(uuid(7)) @db.Uuid
   email     String   @unique @db.VarChar(255)
-  password  String
-  birthdate DateTime @db.Date
+  password  String?
   firstName String
   lastName  String
   createdAt DateTime @default(now())
   active    Boolean  @default(true)
-
   profile Profile? 
-  }
+  accounts OAuthAccount[]
+  refreshTokens RefreshToken[]
+}
 model Profile{
   id        Int      @id @default(autoincrement())
   publicId  String   @unique @default(uuid(7)) @db.Uuid
@@ -30,13 +30,10 @@ model Profile{
   pictureId Int
   picture Asset @relation(fields:[pictureId], references:[id])
   createdAt DateTime @default(now())
-
   followedBy Profile[] @relation("UserFollows")
   following  Profile[] @relation("UserFollows")
-
   blocking     Profile[]        @relation("UserBlocks")
   blockedBy    Profile[]        @relation("UserBlocks")
-
   posts        Post[]
   reposts      Repost[]
   comments     Comment[]
@@ -59,7 +56,6 @@ model Post {
   createdAt   DateTime @default(now())
   private     Boolean  @default(false)
   views       Int      @default(0)
-
   media        Media[] 
   comments     Comment[]
   likes        PostLike[]
@@ -68,7 +64,7 @@ model Post {
   messages Message[]
   notifications Notification[]
   @@index([authorId, createdAt])
-  }
+}
 
 model Media {
   id           Int      @id @default(autoincrement())
@@ -84,13 +80,12 @@ model Media {
   bytes        Int                                     
   duration     Float?                                 
   createdAt    DateTime @default(now())
-
   postId      Int?
   post        Post? @relation(fields:[postId], references:[id], onDelete:Cascade)
   asset   Asset[] 
 }
 model Asset {
-   id           Int      @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
   type     AssetType 
   media  Media? @relation(fields:[mediaId], references:[id], onDelete:SetNull)
@@ -177,6 +172,7 @@ model CollectionLike {
   @@id([ownerId, collectionId])
   @@index([collectionId])
 }
+
 // Chat
 model Chat {
   id          Int     @id @default(autoincrement())
@@ -187,10 +183,10 @@ model Chat {
 }
 
 model ChatMember {
-  id          Int     @id @default(autoincrement())
-  publicId          String        @unique @default(uuid(7)) @db.Uuid
-  chat   Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  chatId Int        
+  id        Int     @id @default(autoincrement())
+  publicId  String        @unique @default(uuid(7)) @db.Uuid
+  chat      Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId    Int        
   profile   Profile?          @relation(fields: [profileId], references: [id], onDelete: SetNull)
   profileId Int?        
   isArchived  Boolean  @default(false)
@@ -237,7 +233,7 @@ model Notification {
   post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId   Int?
   comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
-collectionId      Int?
+  collectionId      Int?
   collection        Collection?            @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   read        Boolean          @default(false)
   createdAt   DateTime         @default(now())
@@ -254,4 +250,29 @@ enum NotificationType {
   NEW_POST
   NEW_COLLECTION
   FOLLOW
+}
+//Auth
+model OAuthAccount {
+  id             Int      @id @default(autoincrement())
+  publicId       String   @unique @default(uuid(7)) @db.Uuid
+  provider       String                     
+  providerUserId String                     
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+}
+model RefreshToken {
+  id         String    @id @default(uuid())
+  familyId   String    
+  userId     Int
+  tokenHash  String
+  used       Boolean   @default(false)
+  revokedAt  DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([familyId])
 }
