@@ -6,9 +6,14 @@ import {
   createUser,
   signToken,
   authorizeUser,
+  editUserInfo,
 } from "./auth.service";
 import { UnauthorizedError } from "../../config/errors/errors";
-import { LoginRequestSchema, RegisterRequestSchema } from "./auth.validators";
+import {
+  LoginRequestSchema,
+  RegisterRequestSchema,
+  UserEditRequestSchema,
+} from "./auth.validators";
 
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
@@ -97,6 +102,23 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
       sameSite: "strict",
     });
     res.json({ accessToken });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Edit Local Account
+export async function editAccount(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError("Unauthorized request.");
+    const data = UserEditRequestSchema.parse(req.body);
+    const user = await editUserInfo(data, currentUserId);
+    res.status(200).json(user);
   } catch (err) {
     next(err);
   }

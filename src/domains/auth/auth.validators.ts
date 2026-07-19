@@ -5,6 +5,19 @@ export const PublicIdSchema = z.uuidv7();
 
 export type PublicId = z.infer<typeof PublicIdSchema>;
 
+// Valid Password
+export const PasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(20, "Password must be at most 20 characters")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(
+    /[^a-zA-Z0-9]/,
+    "Password must contain at least one special character",
+  );
+
 // JWT User
 export const UserResponseSchema = z.object({
   publicId: z.uuidv7(),
@@ -40,7 +53,7 @@ export const RegisterRequestSchema = z
         "Password must contain at least one special character",
       ),
     confirmPassword: z.string(),
-    firstName: z.string().min(2).max(20).nonempty(),
+    firstName: z.string().min(2).max(20),
     lastName: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -57,6 +70,29 @@ export const LoginRequestSchema = z.object({
 });
 
 export type LoginReq = z.infer<typeof LoginRequestSchema>;
+
+// Edit User Info
+export const UserEditRequestSchema = z
+  .object({
+    firstName: z.string().min(2).max(20).optional(),
+    lastName: z.string().optional(),
+    email: z.email().optional(),
+    password: PasswordSchema.optional(),
+    newPassword: PasswordSchema.optional(),
+    confirmNewPassword: z.string().optional(),
+  })
+  .refine(
+    (d) => {
+      if (d.password === undefined && d.newPassword === undefined) return true;
+      return d.newPassword === d.confirmNewPassword;
+    },
+    {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    },
+  );
+
+export type UserEditReq = z.infer<typeof UserEditRequestSchema>;
 
 // Prisma select
 export const omitUserPassword = {
