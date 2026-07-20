@@ -1,12 +1,12 @@
 import z from "zod";
 import { MediaResponseSchema } from "../media/media.validators";
-import { CommentResponseSchema } from "./comments/comments.validators";
-import { LikeResponseSchema } from "./likes/likes.validators";
-import { ProfileLazyResponseSchema } from "../profiles/profiles.validators";
+import * as CommentValidators from "./comments/comments.validators";
+import * as LikeValidators from "./likes/likes.validators";
+import * as ProfileValidators from "../profiles/profiles.validators";
 
 const PostBasicSchema = z.object({
   publicId: z.uuidv7(),
-  author: ProfileLazyResponseSchema,
+  author: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
   description: z.string().optional(),
   createdAt: z.coerce.date(),
   private: z.boolean(),
@@ -16,8 +16,8 @@ const PostBasicSchema = z.object({
 // With relations
 export const PostResponseSchema = PostBasicSchema.extend({
   media: MediaResponseSchema.array(),
-  comments: CommentResponseSchema.array(),
-  likes: LikeResponseSchema.array(),
+  comments: z.lazy(() => CommentValidators.CommentResponseSchema.array()),
+  likes: z.lazy(() => LikeValidators.LikeResponseSchema.array()),
 });
 export type PostRes = z.infer<typeof PostResponseSchema>;
 

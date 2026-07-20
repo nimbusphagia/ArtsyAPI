@@ -30,10 +30,10 @@ model Profile{
   pictureId Int
   picture Asset @relation(fields:[pictureId], references:[id])
   createdAt DateTime @default(now())
-  followedBy Profile[] @relation("UserFollows")
-  following  Profile[] @relation("UserFollows")
-  blocking     Profile[]        @relation("UserBlocks")
-  blockedBy    Profile[]        @relation("UserBlocks")
+  followers Follow[] @relation("Following")
+  following  Follow[] @relation("Follower")
+  blocking     Block[]        @relation("Blocker")
+  blockedBy    Block[]        @relation("Blocked")
   posts        Post[]
   reposts      Repost[]
   comments     Comment[]
@@ -46,7 +46,30 @@ model Profile{
   notificationsReceived Notification[] @relation("NotificationRecipient")
   notificationsSent Notification[] @relation("NotificationActor")
 }
+model Follow {
+  id          Int      @id @default(autoincrement())
+  follower    Profile  @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId  Int
+  following   Profile  @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId Int
+  createdAt   DateTime @default(now())
 
+  @@unique([followerId, followingId]) 
+  @@index([followingId]) 
+  @@index([followerId])  
+}
+model Block {
+  id         Int      @id @default(autoincrement())
+  blocker    Profile  @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId  Int
+  blocked    Profile  @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId  Int
+  createdAt  DateTime @default(now())
+
+ @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
 model Post {
   id          Int      @id @default(autoincrement())
   publicId    String   @unique @default(uuid(7)) @db.Uuid

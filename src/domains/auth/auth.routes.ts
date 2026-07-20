@@ -31,6 +31,6 @@ router.get(
 router.post("/refresh", refresh);
 router.post("/register", register);
 router.post("/login", login);
-router.patch("/account/edit", requireAuth, editAccount);
+router.patch("/account", requireAuth, editAccount);
 
 export default router;

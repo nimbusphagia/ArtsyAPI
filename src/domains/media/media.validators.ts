@@ -3,7 +3,7 @@ import z from "zod";
 export const MediaResponseSchema = z.object({
   publicId: z.uuidv7(),
   cloudinaryId: z.string(),
-  assetId: z.string(),
+  cloudinaryAssetId: z.string(),
   resourceType: z.string(),
   format: z.string(),
   url: z.url(),
@@ -17,3 +17,20 @@ export const MediaResponseSchema = z.object({
 });
 
 export type MediaRes = z.infer<typeof MediaResponseSchema>;
+
+// Prisma
+export const MediaSelect = {
+  publicId: true,
+  cloudinaryId: true,
+  cloudinaryAssetId: true,
+  resourceType: true,
+  format: true,
+  url: true,
+  thumbnail: true,
+  width: true,
+  height: true,
+  bytes: true,
+  duration: true,
+  createdAt: true,
+  postId: true,
+};
