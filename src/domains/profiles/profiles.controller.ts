@@ -8,9 +8,11 @@ import {
   listProfiles,
   createProfile,
   getProfileById,
+  getCurrentProfile,
 } from "./profiles.service";
 import { publicIdSchema } from "../../config/utils/validationUtils";
 
+// Get list of profiles with a filter
 export async function getProfiles(
   req: Request,
   res: Response,
@@ -27,6 +29,7 @@ export async function getProfiles(
   }
 }
 
+// Create profile for the first time
 export async function initiateProfile(
   req: Request,
   res: Response,
@@ -51,6 +54,7 @@ export async function initiateProfile(
   }
 }
 
+// Get any profile
 export async function getProfile(
   req: Request,
   res: Response,
@@ -62,6 +66,22 @@ export async function getProfile(
     const profileId = publicIdSchema.parse(req.params.profileId);
     if (!profileId) throw new NotFoundError("No profile id was provided");
     const profile = await getProfileById(profileId, currentUserId);
+    res.status(200).json(profile);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Get current user's profile
+export async function getMyProfile(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const profile = await getCurrentProfile(currentUserId);
     res.status(200).json(profile);
   } catch (err) {
     next(err);

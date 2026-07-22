@@ -1,3 +1,4 @@
+import { Prisma } from "../../generated/prisma/client";
 import {
   ConflictError,
   NotFoundError,
@@ -6,6 +7,7 @@ import {
 
 import { prisma } from "../../config/prisma";
 import {
+  PrivateProfileSelect,
   ProfileLazyRes,
   ProfileListQuery,
   ProfileOmit,
@@ -24,7 +26,6 @@ import { toMediaData, uploadImage } from "../media/media.service";
 import { PostLazyResponseSchema } from "../posts/posts.validators";
 import { RepostLazyResponseSchema } from "../posts/reposts/reposts.validators";
 import { CollectionLazyResponseSchema } from "../collections/collections.validators";
-import { omitUserPassword } from "../auth/auth.validators";
 
 // List profiles with query
 export async function listProfiles(
@@ -154,39 +155,26 @@ export async function getProfileById(
   });
   if (!profile) throw new NotFoundError("User not found.");
 
-  const parsedPosts = PostLazyResponseSchema.array().parse(
-    profile.posts.map((p) => ({
-      ...p,
-      thumbnails: p.media,
-      stats: p._count,
-    })),
-  );
-  const parsedReposts = RepostLazyResponseSchema.array().parse(
-    profile.reposts.map((r) => ({
-      ...r,
-      post: {
-        thumbnails: r.post.media,
-        stats: r.post._count,
-      },
-    })),
-  );
-  const parsedCollections = CollectionLazyResponseSchema.array().parse(
-    profile.collections.map((c) => ({
-      ...c,
-      thumbnails: c.posts.flatMap((p) => p.media).slice(0, 10),
-      likes: c._count.likes,
-    })),
-  );
+  return mapProfileToRes(profile);
+}
 
-  const parsedProfile = ProfileResponseSchema.parse({
-    ...profile,
-    followerCount: profile._count.followers,
-    followingCount: profile._count.following,
-    posts: parsedPosts,
-    reposts: parsedReposts,
-    collections: parsedCollections,
+// Get My Profile
+export async function getCurrentProfile(
+  currentUserId: string,
+): Promise<ProfileRes> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
   });
-  return parsedProfile;
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: currentUser.profile!.id },
+    select: PrivateProfileSelect,
+  });
+  if (!profile) throw new NotFoundError("Profile not found.");
+
+  return mapProfileToRes(profile);
 }
 
 // Create Asset from imageFile
@@ -221,4 +209,46 @@ async function uploadProfileAsset(
   });
 
   return profilePicture.id;
+}
+
+// Map Prisma Profile to ProfileRes
+type ProfileWithRelations = Prisma.ProfileGetPayload<{
+  select: typeof ProfileSelect;
+}>;
+
+export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
+  const parsedPosts = PostLazyResponseSchema.array().parse(
+    profile.posts.map((p) => ({
+      ...p,
+      thumbnails: p.media,
+      stats: p._count,
+    })),
+  );
+
+  const parsedReposts = RepostLazyResponseSchema.array().parse(
+    profile.reposts.map((r) => ({
+      ...r,
+      post: {
+        thumbnails: r.post.media,
+        stats: r.post._count,
+      },
+    })),
+  );
+
+  const parsedCollections = CollectionLazyResponseSchema.array().parse(
+    profile.collections.map((c) => ({
+      ...c,
+      thumbnails: c.posts.flatMap((p) => p.media).slice(0, 10),
+      likes: c._count.likes,
+    })),
+  );
+
+  return ProfileResponseSchema.parse({
+    ...profile,
+    followerCount: profile._count.followers,
+    followingCount: profile._count.following,
+    posts: parsedPosts,
+    reposts: parsedReposts,
+    collections: parsedCollections,
+  });
 }

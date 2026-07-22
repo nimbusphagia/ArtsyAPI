@@ -1,4 +1,5 @@
 import z from "zod";
+import { Prisma } from "../../generated/prisma/client";
 import * as PostValidators from "../posts/posts.validators";
 import {
   RepostLazyResponseSchema,
@@ -86,4 +87,21 @@ export const ProfileSelect = {
       following: true,
     },
   },
-};
+} satisfies Prisma.ProfileSelect;
+
+export const PrivateProfileSelect = buildProfileSelect({
+  includeInactive: true,
+});
+export function buildProfileSelect(opts: { includeInactive?: boolean } = {}) {
+  return {
+    ...ProfileSelect,
+    collections: {
+      ...ProfileSelect.collections,
+      where: opts.includeInactive ? {} : { private: false },
+    },
+    posts: {
+      ...ProfileSelect.posts,
+      where: opts.includeInactive ? {} : { private: false },
+    },
+  } satisfies Prisma.ProfileSelect;
+}

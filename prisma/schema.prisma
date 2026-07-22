@@ -186,7 +186,7 @@ model Collection {
   owner        Profile    @relation(fields: [ownerId], references: [id], onDelete:Cascade)
   name        String
   description String
-  active      Boolean @default(false)
+  private      Boolean @default(false)
   posts       Post[]
   messages Message[]
   likes  CollectionLike[]

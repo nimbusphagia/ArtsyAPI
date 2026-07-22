@@ -3,10 +3,12 @@ import {
   initiateProfile,
   getProfiles,
   getProfile,
+  getMyProfile,
 } from "./profiles.controller";
 import upload from "../../middleware/uploadFile";
 
 const router = Router();
+router.get("/me", getMyProfile);
 router.get("/", getProfiles);
 router.post(
   "/",

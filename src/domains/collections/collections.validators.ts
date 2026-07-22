@@ -38,4 +38,5 @@ export const CollectionLazySelect = {
       likes: true,
     },
   },
+  private: true,
 };
