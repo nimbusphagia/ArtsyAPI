@@ -7,21 +7,14 @@ import {
   BlockResSchema,
   FollowResSchema,
 } from "./relations/relations.validators";
-
-// Profile List Query
-export const ProfileQuerySchema = z.object({
-  nickname: z.string().optional(),
-  createdAt: z.enum(["asc", "desc"]).default("desc"),
-  follow: z.enum(["followers", "following", "any"]).default("any"),
-});
-
-export type ProfileListQuery = z.infer<typeof ProfileQuerySchema>;
+import { MediaRequestSchema } from "../media/media.validators";
 
 // Lazy
 export const ProfileLazyResponseSchema = z.object({
   publicId: z.uuidv7(),
   nickname: z.string().optional(),
   picture: ProfilePictureResSchema,
+  banner: ProfilePictureResSchema,
   createdAt: z.coerce.date(),
 });
 
@@ -38,6 +31,23 @@ export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
   collections: CollectionLazyResponseSchema.array(),
 });
 export type ProfileRes = z.infer<typeof ProfileResponseSchema>;
+
+// Profile List Query
+export const ProfileQuerySchema = z.object({
+  nickname: z.string().optional(),
+  createdAt: z.enum(["asc", "desc"]).default("desc"),
+  follow: z.enum(["followers", "following", "any"]).default("any"),
+});
+
+export type ProfileListQuery = z.infer<typeof ProfileQuerySchema>;
+
+// Profile Create Request
+export const ProfileRequestSchema = z.object({
+  nickname: z.string().optional(),
+  media: MediaRequestSchema,
+});
+
+export type ProfileReq = z.infer<typeof ProfileRequestSchema>;
 
 // Prisma
 export const ProfileOmit = {

@@ -28,7 +28,9 @@ model Profile{
   userId     Int  @unique
   nickname  String
   pictureId Int
-  picture Asset @relation(fields:[pictureId], references:[id])
+  picture Asset @relation("ProfilePicture",fields:[pictureId], references:[id])
+  bannerId Int
+  banner Asset @relation("ProfileBanner",fields:[bannerId], references:[id])
   createdAt DateTime @default(now())
   followers Follow[] @relation("Following")
   following  Follow[] @relation("Follower")
@@ -108,16 +110,21 @@ model Media {
   asset   Asset[] 
 }
 model Asset {
-  id           Int      @id @default(autoincrement())
-  publicId     String   @unique @default(uuid(7)) @db.Uuid   
-  type     AssetType 
-  media  Media? @relation(fields:[mediaId], references:[id], onDelete:SetNull)
-  mediaId Int?
-  profile Profile[]
+  id           Int       @id @default(autoincrement())
+  publicId     String    @unique @default(uuid(7)) @db.Uuid
+  type         AssetType
+  media        Media?    @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  mediaId      Int?
+
+  profilePictures Profile[] @relation("ProfilePicture")
+  profileBanners  Profile[] @relation("ProfileBanner")
 }
 
 enum AssetType {
+  DEFAULT_PROFILE_PICTURE
+  DEFAULT_PROFILE_BANNER
   PROFILE_PICTURE
+  PROFILE_BANNER   
 }
 
 model Repost {

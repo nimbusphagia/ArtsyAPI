@@ -1,5 +1,17 @@
 import z from "zod";
+import { optionalToNull } from "../../config/utils/validationUtils";
 
+// Asset types
+export const AssetTypes = [
+  "DEFAULT_PROFILE_PICTURE",
+  "DEFAULT_PROFILE_BANNER",
+  "PROFILE_PICTURE",
+  "PROFILE_BANNER",
+] as const;
+export const AssetTypeSchema = z.enum(AssetTypes);
+export type AssetType = z.infer<typeof AssetTypeSchema>;
+
+// Response
 export const MediaResponseSchema = z.object({
   publicId: z.uuidv7(),
   cloudinaryId: z.string(),
@@ -17,6 +29,22 @@ export const MediaResponseSchema = z.object({
 });
 
 export type MediaRes = z.infer<typeof MediaResponseSchema>;
+
+// Request
+export const MediaRequestSchema = z.object({
+  cloudinaryId: z.string(),
+  cloudinaryAssetId: z.string(),
+  resourceType: z.string(),
+  format: z.string(),
+  url: z.url(),
+  thumbnail: optionalToNull(z.url()),
+  width: optionalToNull(z.number()),
+  height: optionalToNull(z.number()),
+  bytes: z.number(),
+  duration: optionalToNull(z.number()),
+});
+
+export type MediaReq = z.infer<typeof MediaRequestSchema>;
 
 // Prisma
 export const MediaSelect = {
