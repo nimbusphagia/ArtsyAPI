@@ -89,6 +89,7 @@ export const ProfileSelect = {
   },
 } satisfies Prisma.ProfileSelect;
 
+// Derive Private Profile Prisma Select
 export const PrivateProfileSelect = buildProfileSelect({
   includeInactive: true,
 });
@@ -104,4 +105,46 @@ export function buildProfileSelect(opts: { includeInactive?: boolean } = {}) {
       where: opts.includeInactive ? {} : { private: false },
     },
   } satisfies Prisma.ProfileSelect;
+}
+
+// Map PrismaProfile to ProfileRes
+type ProfileWithRelations = Prisma.ProfileGetPayload<{
+  select: typeof ProfileSelect;
+}>;
+
+export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
+  const parsedPosts = PostValidators.PostLazyResponseSchema.array().parse(
+    profile.posts.map((p) => ({
+      ...p,
+      thumbnails: p.media,
+      stats: p._count,
+    })),
+  );
+
+  const parsedReposts = RepostLazyResponseSchema.array().parse(
+    profile.reposts.map((r) => ({
+      ...r,
+      post: {
+        thumbnails: r.post.media,
+        stats: r.post._count,
+      },
+    })),
+  );
+
+  const parsedCollections = CollectionLazyResponseSchema.array().parse(
+    profile.collections.map((c) => ({
+      ...c,
+      thumbnails: c.posts.flatMap((p) => p.media).slice(0, 10),
+      likes: c._count.likes,
+    })),
+  );
+
+  return ProfileResponseSchema.parse({
+    ...profile,
+    followerCount: profile._count.followers,
+    followingCount: profile._count.following,
+    posts: parsedPosts,
+    reposts: parsedReposts,
+    collections: parsedCollections,
+  });
 }

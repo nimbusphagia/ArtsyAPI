@@ -1,4 +1,3 @@
-import { Prisma } from "../../generated/prisma/client";
 import {
   ConflictError,
   NotFoundError,
@@ -7,25 +6,17 @@ import {
 
 import { prisma } from "../../config/prisma";
 import {
+  mapProfileToRes,
   PrivateProfileSelect,
   ProfileLazyRes,
   ProfileListQuery,
   ProfileOmit,
   ProfileReq,
   ProfileRes,
-  ProfileResponseSchema,
   ProfileSelect,
 } from "./profiles.validators";
-import {
-  AssetSelect,
-  AssetType,
-  AssetTypeSchema,
-  MulterFile,
-} from "../media/media.validators";
-import { toMediaData, uploadImage } from "../media/media.service";
-import { PostLazyResponseSchema } from "../posts/posts.validators";
-import { RepostLazyResponseSchema } from "../posts/reposts/reposts.validators";
-import { CollectionLazyResponseSchema } from "../collections/collections.validators";
+import { AssetSelect } from "../media/media.validators";
+import { uploadProfileAsset } from "../media/media.service";
 
 // List profiles with query
 export async function listProfiles(
@@ -175,80 +166,4 @@ export async function getCurrentProfile(
   if (!profile) throw new NotFoundError("Profile not found.");
 
   return mapProfileToRes(profile);
-}
-
-// Create Asset from imageFile
-async function uploadProfileAsset(
-  assetType: AssetType,
-  imageFile?: MulterFile,
-): Promise<number> {
-  if (!imageFile) {
-    const defaultType = AssetTypeSchema.parse("DEFAULT_" + assetType);
-    if (!defaultType) throw new Error("Invalid asset type");
-
-    const defaultAsset = await prisma.asset.findFirst({
-      where: { type: defaultType },
-      select: { id: true },
-    });
-    if (!defaultAsset) {
-      throw new Error("Default profile picture asset not found");
-    }
-    return defaultAsset.id;
-  }
-
-  const uploadedImage = await uploadImage(imageFile.buffer, "artsy");
-
-  const profilePicture = await prisma.asset.create({
-    data: {
-      type: assetType,
-      media: {
-        create: toMediaData(uploadedImage),
-      },
-    },
-    select: { id: true },
-  });
-
-  return profilePicture.id;
-}
-
-// Map Prisma Profile to ProfileRes
-type ProfileWithRelations = Prisma.ProfileGetPayload<{
-  select: typeof ProfileSelect;
-}>;
-
-export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
-  const parsedPosts = PostLazyResponseSchema.array().parse(
-    profile.posts.map((p) => ({
-      ...p,
-      thumbnails: p.media,
-      stats: p._count,
-    })),
-  );
-
-  const parsedReposts = RepostLazyResponseSchema.array().parse(
-    profile.reposts.map((r) => ({
-      ...r,
-      post: {
-        thumbnails: r.post.media,
-        stats: r.post._count,
-      },
-    })),
-  );
-
-  const parsedCollections = CollectionLazyResponseSchema.array().parse(
-    profile.collections.map((c) => ({
-      ...c,
-      thumbnails: c.posts.flatMap((p) => p.media).slice(0, 10),
-      likes: c._count.likes,
-    })),
-  );
-
-  return ProfileResponseSchema.parse({
-    ...profile,
-    followerCount: profile._count.followers,
-    followingCount: profile._count.following,
-    posts: parsedPosts,
-    reposts: parsedReposts,
-    collections: parsedCollections,
-  });
 }

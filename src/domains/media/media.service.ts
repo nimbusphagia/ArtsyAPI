@@ -1,5 +1,7 @@
 import cloudinary from "../../config/cloudinary";
 import { UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
+import { AssetType, AssetTypeSchema, MulterFile } from "./media.validators";
+import { prisma } from "../../config/prisma";
 
 // Upload file to cloudinary
 export async function uploadImage(
@@ -47,4 +49,38 @@ export function toMediaData(result: UploadApiResponse) {
     bytes: result.bytes,
     duration: result.duration ?? null,
   };
+}
+
+// Create Profile Asset from imageFile
+export async function uploadProfileAsset(
+  assetType: AssetType,
+  imageFile?: MulterFile,
+): Promise<number> {
+  if (!imageFile) {
+    const defaultType = AssetTypeSchema.parse("DEFAULT_" + assetType);
+    if (!defaultType) throw new Error("Invalid asset type");
+
+    const defaultAsset = await prisma.asset.findFirst({
+      where: { type: defaultType },
+      select: { id: true },
+    });
+    if (!defaultAsset) {
+      throw new Error("Default profile picture asset not found");
+    }
+    return defaultAsset.id;
+  }
+
+  const uploadedImage = await uploadImage(imageFile.buffer, "artsy");
+
+  const profilePicture = await prisma.asset.create({
+    data: {
+      type: assetType,
+      media: {
+        create: toMediaData(uploadedImage),
+      },
+    },
+    select: { id: true },
+  });
+
+  return profilePicture.id;
 }
