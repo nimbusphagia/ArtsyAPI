@@ -1,5 +1,5 @@
 import z from "zod";
-import { MediaResponseSchema } from "../media/media.validators";
+import { MediaResponseSchema, MediaSelect } from "../media/media.validators";
 import * as CommentValidators from "./comments/comments.validators";
 import * as LikeValidators from "./likes/likes.validators";
 import * as ProfileValidators from "../profiles/profiles.validators";
@@ -28,6 +28,20 @@ export const PostLazyResponseSchema = PostBasicSchema.extend({
     comments: z.number().nonnegative(),
     likes: z.number().nonnegative(),
   }),
-  createdAt: z.coerce.date(),
 });
 export type PostLazyRes = z.infer<typeof PostLazyResponseSchema>;
+
+// Prisma
+export const PostLazySelect = {
+  publicId: true,
+  createdAt: true,
+  private: true,
+  views: true,
+  media: { select: MediaSelect },
+  _count: {
+    select: {
+      comments: true,
+      likes: true,
+    },
+  },
+};

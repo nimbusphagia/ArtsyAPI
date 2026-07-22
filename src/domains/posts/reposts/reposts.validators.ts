@@ -1,6 +1,7 @@
 import z from "zod";
 import {
   PostLazyResponseSchema,
+  PostLazySelect,
   PostResponseSchema,
 } from "../posts.validators";
 
@@ -17,3 +18,9 @@ export const RepostLazyResponseSchema = z.object({
   post: PostLazyResponseSchema,
 });
 export type RepostLazyRes = z.infer<typeof RepostLazyResponseSchema>;
+
+// Prisma
+export const RepostLazySelect = {
+  publicId: true,
+  post: { select: PostLazySelect },
+};

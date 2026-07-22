@@ -5,11 +5,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+      - "51212:51212"
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/node_modules
     env_file:
       - .env
+    environment:
+      - BROWSER=none
     depends_on:
       - db
   db:

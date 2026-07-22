@@ -1,10 +1,12 @@
 import z from "zod";
 import { PostResponseSchema } from "../posts/posts.validators";
-import { MediaResponseSchema } from "../media/media.validators";
+import { MediaResponseSchema, MediaSelect } from "../media/media.validators";
 import { LikeResponseSchema } from "./likes/likes.validators";
+import * as ProfileValidators from "../profiles/profiles.validators";
 
 const CollectionBasicSchema = z.object({
   publicId: z.uuidv7(),
+  owner: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
   name: z.string(),
   description: z.string(),
   active: z.boolean().default(false),
@@ -24,3 +26,16 @@ export const CollectionResponseSchema = CollectionBasicSchema.extend({
   likes: LikeResponseSchema.array(),
 });
 export type CollectionRes = z.infer<typeof CollectionResponseSchema>;
+
+// Prisma
+export const CollectionLazySelect = {
+  publicId: true,
+  name: true,
+  createdAt: true,
+  posts: { select: { publicId: true, media: { select: MediaSelect } } },
+  _count: {
+    select: {
+      likes: true,
+    },
+  },
+};

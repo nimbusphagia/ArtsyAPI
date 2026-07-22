@@ -50,6 +50,7 @@ model Profile{
 }
 model Follow {
   id          Int      @id @default(autoincrement())
+  publicId    String   @unique @default(uuid(7)) @db.Uuid
   follower    Profile  @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
   followerId  Int
   following   Profile  @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
@@ -62,6 +63,7 @@ model Follow {
 }
 model Block {
   id         Int      @id @default(autoincrement())
+  publicId    String   @unique @default(uuid(7)) @db.Uuid
   blocker    Profile  @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
   blockerId  Int
   blocked    Profile  @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)

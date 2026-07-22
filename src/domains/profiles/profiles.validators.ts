@@ -1,20 +1,26 @@
 import z from "zod";
-import { ProfilePictureResSchema } from "./profilePictures/profilePictures.validators";
 import * as PostValidators from "../posts/posts.validators";
-import { RepostLazyResponseSchema } from "../posts/reposts/reposts.validators";
-import { CollectionLazyResponseSchema } from "../collections/collections.validators";
 import {
-  BlockResSchema,
-  FollowResSchema,
-} from "./relations/relations.validators";
-import { MediaRequestSchema } from "../media/media.validators";
+  RepostLazyResponseSchema,
+  RepostLazySelect,
+} from "../posts/reposts/reposts.validators";
+import {
+  CollectionLazyResponseSchema,
+  CollectionLazySelect,
+} from "../collections/collections.validators";
+import {
+  AssetResSchema,
+  AssetSelect,
+  multerFileSchema,
+} from "../media/media.validators";
+import { ItemPublicSchema } from "../../config/utils/validationUtils";
 
 // Lazy
 export const ProfileLazyResponseSchema = z.object({
   publicId: z.uuidv7(),
   nickname: z.string().optional(),
-  picture: ProfilePictureResSchema,
-  banner: ProfilePictureResSchema,
+  picture: AssetResSchema,
+  banner: AssetResSchema,
   createdAt: z.coerce.date(),
 });
 
@@ -22,13 +28,18 @@ export type ProfileLazyRes = z.infer<typeof ProfileLazyResponseSchema>;
 
 // With relations(loaded lazily)
 export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
-  followers: FollowResSchema.array(),
-  following: FollowResSchema.array(),
-  blocking: BlockResSchema.array(),
-  blockedBy: BlockResSchema.array(),
-  posts: z.lazy(() => PostValidators.PostLazyResponseSchema.array()),
+  followerCount: z.number(),
+  followingCount: z.number(),
+  blocking: ItemPublicSchema.array(),
+  blockedBy: ItemPublicSchema.array(),
+  posts: z.lazy(() =>
+    PostValidators.PostLazyResponseSchema.omit({
+      author: true,
+      description: true,
+    }).array(),
+  ),
   reposts: RepostLazyResponseSchema.array(),
-  collections: CollectionLazyResponseSchema.array(),
+  collections: CollectionLazyResponseSchema.omit({ owner: true }).array(),
 });
 export type ProfileRes = z.infer<typeof ProfileResponseSchema>;
 
@@ -44,7 +55,8 @@ export type ProfileListQuery = z.infer<typeof ProfileQuerySchema>;
 // Profile Create Request
 export const ProfileRequestSchema = z.object({
   nickname: z.string().optional(),
-  media: MediaRequestSchema,
+  pictureFile: multerFileSchema.optional(),
+  bannerFile: multerFileSchema.optional(),
 });
 
 export type ProfileReq = z.infer<typeof ProfileRequestSchema>;
@@ -54,4 +66,24 @@ export const ProfileOmit = {
   id: true,
   userId: true,
   pictureId: true,
+};
+export const ProfileSelect = {
+  publicId: true,
+  nickname: true,
+  createdAt: true,
+  picture: { select: AssetSelect },
+  banner: { select: AssetSelect },
+  blocking: { select: { publicId: true } },
+  blockedBy: { select: { publicId: true } },
+  posts: {
+    select: PostValidators.PostLazySelect,
+  },
+  reposts: { select: RepostLazySelect },
+  collections: { select: CollectionLazySelect },
+  _count: {
+    select: {
+      followers: true,
+      following: true,
+    },
+  },
 };

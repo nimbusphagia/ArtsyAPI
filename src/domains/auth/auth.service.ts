@@ -12,13 +12,13 @@ import { addDays } from "date-fns";
 import {
   LoginReq,
   omitUserPassword,
-  PublicId,
   RegisterReq,
   TokenRotateReturn,
   UserEditReq,
   UserRes,
 } from "./auth.validators";
 import { JWTPayload, SignJWT, jwtVerify } from "jose";
+import { PublicId } from "../../config/utils/validationUtils";
 
 // Register with JWT
 export async function createUser(data: RegisterReq): Promise<UserRes> {

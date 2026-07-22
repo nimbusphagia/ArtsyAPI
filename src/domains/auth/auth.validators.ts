@@ -1,10 +1,5 @@
 import z from "zod";
 
-// PublicId
-export const PublicIdSchema = z.uuidv7();
-
-export type PublicId = z.infer<typeof PublicIdSchema>;
-
 // Valid Password
 export const PasswordSchema = z
   .string()

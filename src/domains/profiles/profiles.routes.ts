@@ -1,8 +1,21 @@
 import { Router } from "express";
-import { getProfiles } from "./profiles.controller";
+import {
+  initiateProfile,
+  getProfiles,
+  getProfile,
+} from "./profiles.controller";
+import upload from "../../middleware/uploadFile";
 
 const router = Router();
 router.get("/", getProfiles);
-//router.get("/:publicId");
+router.post(
+  "/",
+  upload.fields([
+    { name: "profilePicture", maxCount: 1 },
+    { name: "profileBanner", maxCount: 1 },
+  ]),
+  initiateProfile,
+);
+router.get("/:profileId", getProfile);
 
 export default router;

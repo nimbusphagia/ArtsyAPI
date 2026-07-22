@@ -62,3 +62,33 @@ export const MediaSelect = {
   createdAt: true,
   postId: true,
 };
+
+// Assets
+export const AssetResSchema = z.object({
+  publicId: z.uuidv7(),
+  type: AssetTypeSchema,
+  media: MediaResponseSchema.nullable(),
+});
+export type AssetRes = z.infer<typeof AssetResSchema>;
+
+// Prisma
+export const AssetSelect = {
+  publicId: true,
+  type: true,
+  media: { select: MediaSelect },
+};
+
+// Multer
+export const multerFileSchema = z.object({
+  fieldname: z.string(),
+  originalname: z.string(),
+  encoding: z.string(),
+  mimetype: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  size: z.number().max(5 * 1024 * 1024, "File must be smaller than 5MB"),
+  buffer: z.instanceof(Buffer),
+  destination: z.string().optional(),
+  filename: z.string().optional(),
+  path: z.string().optional(),
+});
+
+export type MulterFile = z.infer<typeof multerFileSchema>;
