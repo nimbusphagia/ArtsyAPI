@@ -9,6 +9,7 @@ import {
   createProfile,
   getProfileById,
   getCurrentProfile,
+  editProfile,
 } from "./profiles.service";
 import { publicIdSchema } from "../../config/utils/validationUtils";
 
@@ -40,15 +41,15 @@ export async function initiateProfile(
     if (!currentUserId) throw new UnauthorizedError();
     const files = req.files as {
       profilePicture?: Express.Multer.File[];
-      bannerFile?: Express.Multer.File[];
+      profileBanner?: Express.Multer.File[];
     };
     const data = ProfileRequestSchema.parse({
       pictureFile: files?.profilePicture?.[0],
-      bannerFile: files?.bannerFile?.[0],
+      bannerFile: files?.profileBanner?.[0],
       ...req.body,
     });
     const profile = await createProfile(data, currentUserId);
-    res.status(200).json(profile);
+    res.status(201).json(profile);
   } catch (err) {
     next(err);
   }
@@ -82,6 +83,30 @@ export async function getMyProfile(
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
     const profile = await getCurrentProfile(currentUserId);
+    res.status(200).json(profile);
+  } catch (err) {
+    next(err);
+  }
+}
+// Edit my Profile
+export async function updateMyProfile(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const files = req.files as {
+      profilePicture?: Express.Multer.File[];
+      profileBanner?: Express.Multer.File[];
+    };
+    const data = ProfileRequestSchema.parse({
+      pictureFile: files?.profilePicture?.[0],
+      bannerFile: files?.profileBanner?.[0],
+      ...req.body,
+    });
+    const profile = await editProfile(data, currentUserId);
     res.status(200).json(profile);
   } catch (err) {
     next(err);

@@ -23,6 +23,12 @@ export async function listProfiles(
   query: ProfileListQuery,
   currentUserId: string,
 ): Promise<ProfileLazyRes[]> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
   const nicknameFilter =
     query.nickname !== undefined
       ? { startsWith: query.nickname, mode: "insensitive" as const }
@@ -30,7 +36,7 @@ export async function listProfiles(
 
   if (query.follow === "following") {
     const profile = await prisma.profile.findUnique({
-      where: { publicId: currentUserId },
+      where: { id: currentUser.profile!.id },
       select: {
         following: {
           ...(nicknameFilter && {
@@ -55,7 +61,7 @@ export async function listProfiles(
 
   if (query.follow === "followers") {
     const profile = await prisma.profile.findUnique({
-      where: { publicId: currentUserId },
+      where: { id: currentUser.profile!.id },
       select: {
         followers: {
           ...(nicknameFilter && {
@@ -101,18 +107,16 @@ export async function createProfile(
   });
   if (!user) throw new NotFoundError();
   if (user.profile) throw new ConflictError();
-
-  const pictureId = await uploadProfileAsset(
-    "PROFILE_PICTURE",
-    data.pictureFile,
+  const { pictureFile, bannerFile } = data;
+  const [pictureId, bannerId] = await uploadProfileAssets(
+    { pictureFile, bannerFile },
+    true,
   );
-  const bannerId = await uploadProfileAsset("PROFILE_BANNER", data.bannerFile);
-
   const profile = await prisma.profile.create({
     data: {
       userId: user.id,
-      pictureId,
-      bannerId,
+      pictureId: pictureId!,
+      bannerId: bannerId!,
       nickname: data.nickname ?? `${user.firstName} ${user.lastName}`,
     },
     omit: ProfileOmit,
@@ -166,4 +170,53 @@ export async function getCurrentProfile(
   if (!profile) throw new NotFoundError("Profile not found.");
 
   return mapProfileToRes(profile);
+}
+// Edit My Profile
+export async function editProfile(
+  data: ProfileReq,
+  currentUserId: string,
+): Promise<ProfileRes> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const { nickname, pictureFile, bannerFile } = data;
+  const [pictureId, bannerId] = await uploadProfileAssets(
+    { pictureFile, bannerFile },
+    false,
+  );
+  const profile = await prisma.profile.update({
+    where: { id: currentUser.profile!.id },
+    data: {
+      ...(pictureId && { pictureId }),
+      ...(bannerId && { bannerId }),
+      ...(nickname?.trim() && { nickname: nickname.trim() }),
+    },
+    select: ProfileSelect,
+  });
+
+  if (!profile) throw new NotFoundError("Profile not found.");
+
+  return mapProfileToRes(profile);
+}
+
+/* Utils */
+async function uploadProfileAssets(
+  { pictureFile, bannerFile }: ProfileReq,
+  strictUpload?: boolean,
+) {
+  if (!strictUpload) {
+    const pictureId = pictureFile
+      ? await uploadProfileAsset("PROFILE_PICTURE", pictureFile)
+      : null;
+    const bannerId = bannerFile
+      ? await uploadProfileAsset("PROFILE_BANNER", bannerFile)
+      : null;
+    return [pictureId, bannerId];
+  }
+  return Promise.all([
+    uploadProfileAsset("PROFILE_PICTURE", pictureFile),
+    uploadProfileAsset("PROFILE_BANNER", bannerFile),
+  ]);
 }

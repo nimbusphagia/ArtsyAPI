@@ -4,6 +4,7 @@ import {
   getProfiles,
   getProfile,
   getMyProfile,
+  updateMyProfile,
 } from "./profiles.controller";
 import upload from "../../middleware/uploadFile";
 
@@ -18,6 +19,15 @@ router.post(
   ]),
   initiateProfile,
 );
+router.patch(
+  "/me",
+  upload.fields([
+    { name: "profilePicture", maxCount: 1 },
+    { name: "profileBanner", maxCount: 1 },
+  ]),
+  updateMyProfile,
+);
+
 router.get("/:profileId", getProfile);
 
 export default router;
