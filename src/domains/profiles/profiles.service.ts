@@ -8,6 +8,7 @@ import { prisma } from "../../config/prisma";
 import {
   mapProfileToRes,
   PrivateProfileSelect,
+  ProfileIsNotBlocked,
   ProfileLazyRes,
   ProfileListQuery,
   ProfileOmit,
@@ -36,7 +37,10 @@ export async function listProfiles(
 
   if (query.follow === "following") {
     const profile = await prisma.profile.findUnique({
-      where: { id: currentUser.profile!.id },
+      where: {
+        id: currentUser.profile!.id,
+        profile: ProfileIsNotBlocked(currentUser.profile!.id),
+      },
       select: {
         following: {
           ...(nicknameFilter && {
@@ -61,7 +65,10 @@ export async function listProfiles(
 
   if (query.follow === "followers") {
     const profile = await prisma.profile.findUnique({
-      where: { id: currentUser.profile!.id },
+      where: {
+        id: currentUser.profile!.id,
+        profile: ProfileIsNotBlocked(currentUser.profile!.id),
+      },
       select: {
         followers: {
           ...(nicknameFilter && {
@@ -85,7 +92,12 @@ export async function listProfiles(
   }
 
   return prisma.profile.findMany({
-    ...(nicknameFilter && { where: { nickname: nicknameFilter } }),
+    ...(nicknameFilter && {
+      where: {
+        nickname: nicknameFilter,
+        profile: ProfileIsNotBlocked(currentUser.profile!.id),
+      },
+    }),
     include: {
       picture: { select: AssetSelect },
       banner: { select: AssetSelect },
@@ -144,7 +156,6 @@ export async function getProfileById(
       publicId,
       user: { active: true },
       blocking: { none: { blockedId: currentUser.profile!.id } },
-      blockedBy: { none: { blockerId: currentUser.profile!.id } },
     },
     select: ProfileSelect,
   });

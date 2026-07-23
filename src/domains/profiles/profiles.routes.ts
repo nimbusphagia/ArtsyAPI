@@ -9,8 +9,9 @@ import {
 import upload from "../../middleware/uploadFile";
 
 const router = Router();
-router.get("/me", getMyProfile);
+
 router.get("/", getProfiles);
+
 router.post(
   "/",
   upload.fields([
@@ -19,6 +20,9 @@ router.post(
   ]),
   initiateProfile,
 );
+
+router.get("/me", getMyProfile);
+
 router.patch(
   "/me",
   upload.fields([

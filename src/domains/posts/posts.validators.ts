@@ -1,5 +1,9 @@
 import z from "zod";
-import { MediaResponseSchema, MediaSelect } from "../media/media.validators";
+import {
+  MediaResponseSchema,
+  MediaSelect,
+  multerFileSchema,
+} from "../media/media.validators";
 import * as CommentValidators from "./comments/comments.validators";
 import * as LikeValidators from "./likes/likes.validators";
 import * as ProfileValidators from "../profiles/profiles.validators";
@@ -23,13 +27,21 @@ export type PostRes = z.infer<typeof PostResponseSchema>;
 
 // Lazy
 export const PostLazyResponseSchema = PostBasicSchema.extend({
-  thumbnails: z.url().array(),
+  thumbnails: MediaResponseSchema.array(),
   stats: z.object({
     comments: z.number().nonnegative(),
     likes: z.number().nonnegative(),
   }),
 });
 export type PostLazyRes = z.infer<typeof PostLazyResponseSchema>;
+
+// Post Create
+export const PostRequestSchema = z.object({
+  description: z.string().optional(),
+  files: multerFileSchema.array(),
+  private: z.boolean(),
+});
+export type PostReq = z.infer<typeof PostRequestSchema>;
 
 // Prisma
 export const PostLazySelect = {

@@ -63,6 +63,18 @@ export const ProfileRequestSchema = z.object({
 export type ProfileReq = z.infer<typeof ProfileRequestSchema>;
 
 // Prisma
+export function ProfileIsNotBlocked(profileId: number) {
+  return {
+    is: {
+      blocking: {
+        none: {
+          blockedId: profileId,
+        },
+      },
+    },
+  };
+}
+
 export const ProfileOmit = {
   id: true,
   userId: true,
