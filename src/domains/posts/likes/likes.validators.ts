@@ -3,7 +3,7 @@ import * as ProfileValidators from "../../profiles/profiles.validators";
 
 export const LikeResponseSchema = z.object({
   get owner() {
-    return { select: ProfileValidators.ProfileLazySelect };
+    return ProfileValidators.ProfileLazyResponseSchema;
   },
   createdAt: z.coerce.date(),
 });

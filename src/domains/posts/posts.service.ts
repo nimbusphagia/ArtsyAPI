@@ -175,7 +175,6 @@ export async function getPostById(
     select: PostSelect,
   });
   if (!post) throw new NotFoundError("Post not found");
-  console.log(post.comments);
   const parsedPosts = PostResponseSchema.parse({
     ...post,
     comments: post.comments,
@@ -195,23 +194,11 @@ export async function deletePostById(
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
-  try {
-    await prisma.post.delete({
-      where: {
-        publicId: postId,
-        authorId: currentUser.profile!.id,
-      },
-      select: { id: true },
-    });
-  } catch (err) {
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === "P2025"
-    ) {
-      throw new NotFoundError("Post not found");
-    }
-    throw err;
-  }
+  await prisma.post.delete({
+    where: {
+      publicId: postId,
+      authorId: currentUser.profile!.id,
+    },
+    select: { id: true },
+  });
 }
-
-// Likes and comments

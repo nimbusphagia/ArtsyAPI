@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { AppError } from "./errors";
+import { Prisma } from "../../generated/prisma/client";
 
 export function ErrorHandler(
   err: unknown,
@@ -18,9 +19,31 @@ export function ErrorHandler(
     });
     return;
   }
+
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ message: err.message });
     return;
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    switch (err.code) {
+      case "P2025":
+        res.status(404).json({ message: "Resource not found" });
+        return;
+      case "P2002":
+        res.status(409).json({
+          message: "A record with this value already exists",
+          fields: err.meta?.target,
+        });
+        return;
+      case "P2003":
+        res.status(409).json({ message: "Related resource does not exist" });
+        return;
+      default:
+        console.error("Unhandled Prisma error:", err.code, err.meta);
+        res.status(500).json({ message: "Database error" });
+        return;
+    }
   }
 
   console.error(err);
