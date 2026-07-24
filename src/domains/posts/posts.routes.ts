@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createNewPost,
+  deletePost,
   editPostInfo,
   getMyPosts,
   getPublicPost,
@@ -9,9 +10,10 @@ import upload from "../../middleware/uploadFile";
 
 const router = Router();
 
+router.post("/", upload.array("media"), createNewPost);
 router.get("/", getMyPosts);
 router.get("/:postId", getPublicPost);
-router.post("/", upload.array("media"), createNewPost);
 router.patch("/:postId", editPostInfo);
+router.delete("/:postId", deletePost);
 
 export default router;

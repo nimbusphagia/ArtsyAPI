@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
 import {
   createPost,
+  deletePostById,
   editPost,
   getPostById,
   listMyPosts,
@@ -92,6 +93,22 @@ export async function editPostInfo(
     });
     const post = await editPost(data, currentUserId);
     res.status(200).json(post);
+  } catch (error) {
+    next(error);
+  }
+}
+export async function deletePost(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const postId = publicIdSchema.parse(req.params.postId);
+    if (!postId) throw new NotFoundError("No post id was provided");
+    await deletePostById(postId, currentUserId);
+    res.status(204).end();
   } catch (error) {
     next(error);
   }

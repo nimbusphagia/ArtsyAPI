@@ -4,6 +4,7 @@ import {
   ValidationError,
 } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
+import { Prisma } from "../../generated/prisma/client";
 import { toMediaData, uploadImage } from "../media/media.service";
 import {
   ProfileIsNotBlocked,
@@ -182,3 +183,35 @@ export async function getPostById(
   });
   return parsedPosts;
 }
+
+// Delete post
+export async function deletePostById(
+  postId: string,
+  currentUserId: string,
+): Promise<void> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  try {
+    await prisma.post.delete({
+      where: {
+        publicId: postId,
+        authorId: currentUser.profile!.id,
+      },
+      select: { id: true },
+    });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2025"
+    ) {
+      throw new NotFoundError("Post not found");
+    }
+    throw err;
+  }
+}
+
+// Likes and comments
