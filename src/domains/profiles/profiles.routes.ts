@@ -37,4 +37,5 @@ router.get("/:profileId", getProfile);
 
 // List posts by profile
 router.get("/:profileId/posts", getPublicPosts);
+
 export default router;

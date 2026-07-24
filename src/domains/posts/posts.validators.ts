@@ -21,7 +21,7 @@ const PostBasicSchema = z.object({
 export const PostResponseSchema = PostBasicSchema.extend({
   media: MediaResponseSchema.array(),
   comments: z.lazy(() => CommentValidators.CommentResponseSchema.array()),
-  likes: z.number().nonnegative(),
+  likes: z.number(),
 });
 export type PostRes = z.infer<typeof PostResponseSchema>;
 

@@ -4,7 +4,6 @@ import {
   ValidationError,
 } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
-import { Prisma } from "../../generated/prisma/client";
 import { toMediaData, uploadImage } from "../media/media.service";
 import {
   ProfileIsNotBlocked,
@@ -175,9 +174,12 @@ export async function getPostById(
     select: PostSelect,
   });
   if (!post) throw new NotFoundError("Post not found");
+  console.log("comments count: ", post.comments);
   const parsedPosts = PostResponseSchema.parse({
     ...post,
-    comments: post.comments,
+    comments: post.comments.map((c) => {
+      return { ...c, likes: c._count.likes };
+    }),
     likes: post._count.likes,
   });
   return parsedPosts;

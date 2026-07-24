@@ -1,17 +1,22 @@
 import z from "zod";
-import { LikeResponseSchema } from "../likes/likes.validators";
 import * as ProfileValidators from "../../profiles/profiles.validators";
 
 export const CommentResponseSchema = z.object({
   publicId: z.uuidv7(),
   get author() {
-    return { select: ProfileValidators.ProfileLazySelect };
+    return ProfileValidators.ProfileLazyResponseSchema;
   },
   text: z.string(),
   createdAt: z.coerce.date(),
-  likes: LikeResponseSchema.array(),
+  likes: z.number(),
 });
 export type CommentRes = z.infer<typeof CommentResponseSchema>;
+
+export const CommentRequestSchema = z.object({
+  postId: z.uuidv7(),
+  text: z.string().nonempty(),
+});
+export type CommentReq = z.infer<typeof CommentRequestSchema>;
 
 //Prisma
 export const CommentLazySelect = {

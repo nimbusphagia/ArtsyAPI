@@ -7,6 +7,7 @@ import {
   getPublicPost,
 } from "./posts.controller";
 import likesRouter from "./likes/likes.routes";
+import commentsRouter from "./comments/comments.routes";
 import upload from "../../middleware/uploadFile";
 
 const router = Router();
@@ -18,5 +19,8 @@ router.patch("/:postId", editPostInfo);
 router.delete("/:postId", deletePost);
 
 router.use("/:postId/likes", likesRouter);
+
+// Route params declared on the router
+router.use("/", commentsRouter);
 
 export default router;
