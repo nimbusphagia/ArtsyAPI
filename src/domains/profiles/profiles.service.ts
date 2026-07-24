@@ -159,7 +159,7 @@ export async function getCurrentProfile(
 
   const profile = await prisma.profile.findUnique({
     where: { id: currentUser.profile!.id },
-    select: PrivateProfileSelect,
+    select: PrivateProfileSelect(),
   });
   if (!profile) throw new NotFoundError("Profile not found.");
 

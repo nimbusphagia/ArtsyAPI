@@ -91,8 +91,8 @@ export const ProfileSelect = {
   banner: { select: AssetSelect },
   blocking: { select: { publicId: true } },
   blockedBy: { select: { publicId: true } },
-  posts: {
-    select: PostValidators.PostLazySelect,
+  get posts() {
+    return { select: PostValidators.PostLazySelect };
   },
   reposts: { select: RepostLazySelect },
   collections: { select: CollectionLazySelect },
@@ -105,9 +105,8 @@ export const ProfileSelect = {
 } satisfies Prisma.ProfileSelect;
 
 // Derive Private Profile Prisma Select
-export const PrivateProfileSelect = buildProfileSelect({
-  includeInactive: true,
-});
+export const PrivateProfileSelect = () =>
+  buildProfileSelect({ includeInactive: true });
 export function buildProfileSelect(opts: { includeInactive?: boolean } = {}) {
   return {
     ...ProfileSelect,
