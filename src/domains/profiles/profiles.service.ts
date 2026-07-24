@@ -11,12 +11,11 @@ import {
   ProfileIsNotBlocked,
   ProfileLazyRes,
   ProfileListQuery,
-  ProfileOmit,
   ProfileReq,
   ProfileRes,
   ProfileSelect,
+  ProfileLazySelect,
 } from "./profiles.validators";
-import { AssetSelect } from "../media/media.validators";
 import { uploadProfileAsset } from "../media/media.service";
 
 // List profiles with query
@@ -50,11 +49,7 @@ export async function listProfiles(
           take: 20,
           select: {
             following: {
-              include: {
-                picture: { select: AssetSelect },
-                banner: { select: AssetSelect },
-              },
-              omit: ProfileOmit,
+              select: ProfileLazySelect,
             },
           },
         },
@@ -78,11 +73,7 @@ export async function listProfiles(
           take: 20,
           select: {
             follower: {
-              include: {
-                picture: { select: AssetSelect },
-                banner: { select: AssetSelect },
-              },
-              omit: ProfileOmit,
+              select: ProfileLazySelect,
             },
           },
         },
@@ -98,11 +89,7 @@ export async function listProfiles(
         profile: ProfileIsNotBlocked(currentUser.profile!.id),
       },
     }),
-    include: {
-      picture: { select: AssetSelect },
-      banner: { select: AssetSelect },
-    },
-    omit: ProfileOmit,
+    select: ProfileLazySelect,
     orderBy: { createdAt: query.createdAt },
     take: 20,
   });
@@ -131,11 +118,7 @@ export async function createProfile(
       bannerId: bannerId!,
       nickname: data.nickname ?? `${user.firstName} ${user.lastName}`,
     },
-    omit: ProfileOmit,
-    include: {
-      picture: { select: AssetSelect },
-      banner: { select: AssetSelect },
-    },
+    select: ProfileLazySelect,
   });
   return profile;
 }

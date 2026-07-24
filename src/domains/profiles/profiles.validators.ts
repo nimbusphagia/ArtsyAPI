@@ -75,11 +75,6 @@ export function ProfileIsNotBlocked(profileId: number) {
   };
 }
 
-export const ProfileOmit = {
-  id: true,
-  userId: true,
-  pictureId: true,
-};
 export const ProfileLazySelect = {
   publicId: true,
   nickname: true,

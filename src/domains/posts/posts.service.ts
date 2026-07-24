@@ -1,11 +1,7 @@
 import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
 import { toMediaData, uploadImage } from "../media/media.service";
-import {
-  ProfileIsNotBlocked,
-  ProfileLazySelect,
-  ProfileOmit,
-} from "../profiles/profiles.validators";
+import { ProfileLazySelect } from "../profiles/profiles.validators";
 import {
   type PostLazyRes,
   PostLazySelect,
@@ -39,11 +35,15 @@ export async function listPostsByProfile(
   if (!targetProfile) throw new NotFoundError("User not found.");
   const posts = await prisma.post.findMany({
     where: { authorId: targetProfile.id, private: false },
-    select: PostLazySelect,
+    select: { ...PostLazySelect, author: { select: ProfileLazySelect } },
   });
   const parsedPosts = PostLazyResponseSchema.array().parse(
     posts.map((p) => {
-      return { ...p, stats: p._count };
+      return {
+        ...p,
+        thumbnails: p.media,
+        stats: p._count,
+      };
     }),
   );
   return parsedPosts;

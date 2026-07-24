@@ -9,10 +9,10 @@ import * as LikeValidators from "./likes/likes.validators";
 import * as ProfileValidators from "../profiles/profiles.validators";
 
 const PostBasicSchema = z.object({
-  publicId: z.uuidv7(),
-  author: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
   description: z.string().optional(),
   createdAt: z.coerce.date(),
+  publicId: z.uuidv7(),
+  author: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
   private: z.boolean(),
   views: z.number().nonnegative(),
 });
@@ -44,11 +44,12 @@ export type PostReq = z.infer<typeof PostRequestSchema>;
 
 // Prisma
 export const PostLazySelect = {
-  publicId: true,
   createdAt: true,
+  publicId: true,
+  description: true,
+  media: { select: MediaSelect },
   private: true,
   views: true,
-  media: { select: MediaSelect },
   _count: {
     select: {
       comments: true,
