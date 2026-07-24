@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { getPublicPosts } from "./posts.controller";
+import { createNewPost } from "./posts.controller";
+import upload from "../../middleware/uploadFile";
 
 const router = Router();
 
-router.get("/", getPublicPosts);
+router.post("/", upload.array("media"), createNewPost);
 
 export default router;

@@ -79,7 +79,7 @@ export const AssetSelect = {
 };
 
 // Multer
-export const multerFileSchema = z.object({
+export const MulterFileSchema = z.object({
   fieldname: z.string(),
   originalname: z.string(),
   encoding: z.string(),
@@ -91,4 +91,4 @@ export const multerFileSchema = z.object({
   path: z.string().optional(),
 });
 
-export type MulterFile = z.infer<typeof multerFileSchema>;
+export type MulterFile = z.infer<typeof MulterFileSchema>;

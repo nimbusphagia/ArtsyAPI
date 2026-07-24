@@ -24,7 +24,7 @@ app.use(cookieParser());
 
 app.use("/", authRouter);
 app.use("/profiles", requireAuth, profilesRouter);
-app.use("/posts", requireAuth, profilesRouter);
+app.use("/posts", requireAuth, postsRouter);
 
 app.use(ErrorHandler);
 

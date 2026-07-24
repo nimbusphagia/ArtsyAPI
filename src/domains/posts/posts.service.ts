@@ -1,7 +1,11 @@
 import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
 import { toMediaData, uploadImage } from "../media/media.service";
-import { ProfileIsNotBlocked } from "../profiles/profiles.validators";
+import {
+  ProfileIsNotBlocked,
+  ProfileLazySelect,
+  ProfileOmit,
+} from "../profiles/profiles.validators";
 import {
   type PostLazyRes,
   PostLazySelect,
@@ -20,17 +24,21 @@ export async function listPostsByProfile(
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
-  const targetUser = await prisma.user.findFirst({
+  const targetProfile = await prisma.profile.findUnique({
     where: {
       publicId: profilePublicId,
-      active: true,
-      profile: ProfileIsNotBlocked(currentUser.profile!.id),
+      user: { active: true },
+      blocking: {
+        none: {
+          blockedId: currentUser.profile!.id,
+        },
+      },
     },
-    select: { profile: { select: { id: true } } },
+    select: { id: true },
   });
-  if (!targetUser) throw new NotFoundError("User not found.");
+  if (!targetProfile) throw new NotFoundError("User not found.");
   const posts = await prisma.post.findMany({
-    where: { authorId: targetUser.profile!.id, private: false },
+    where: { authorId: targetProfile.id, private: false },
     select: PostLazySelect,
   });
   const parsedPosts = PostLazyResponseSchema.array().parse(
@@ -49,23 +57,27 @@ export async function createPost(data: PostReq, currentUserId: string) {
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
+  const { description, files } = data;
   const uploadedImages = await Promise.all(
-    data.files.map(async (m) =>
-      toMediaData(await uploadImage(m.buffer, "artsy")),
-    ),
+    files.map(async (m) => toMediaData(await uploadImage(m.buffer, "artsy"))),
   );
 
   const post = await prisma.post.create({
     data: {
       authorId: currentUser.profile!.id,
+      ...(description && { description }),
       media: {
         createMany: {
           data: uploadedImages,
         },
       },
     },
-    select: PostLazySelect,
+    select: { ...PostLazySelect, author: { select: ProfileLazySelect } },
   });
 
-  return PostLazyResponseSchema.parse({ ...post, stats: post._count });
+  return PostLazyResponseSchema.parse({
+    ...post,
+    thumbnails: post.media,
+    stats: post._count,
+  });
 }

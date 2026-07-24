@@ -12,7 +12,7 @@ import {
 import {
   AssetResSchema,
   AssetSelect,
-  multerFileSchema,
+  MulterFileSchema,
 } from "../media/media.validators";
 import { ItemPublicSchema } from "../../config/utils/validationUtils";
 
@@ -56,8 +56,8 @@ export type ProfileListQuery = z.infer<typeof ProfileQuerySchema>;
 // Profile Create Request
 export const ProfileRequestSchema = z.object({
   nickname: z.string().optional(),
-  pictureFile: multerFileSchema.optional(),
-  bannerFile: multerFileSchema.optional(),
+  pictureFile: MulterFileSchema.optional(),
+  bannerFile: MulterFileSchema.optional(),
 });
 
 export type ProfileReq = z.infer<typeof ProfileRequestSchema>;
@@ -80,6 +80,14 @@ export const ProfileOmit = {
   userId: true,
   pictureId: true,
 };
+export const ProfileLazySelect = {
+  publicId: true,
+  nickname: true,
+  createdAt: true,
+  picture: { select: AssetSelect },
+  banner: { select: AssetSelect },
+};
+
 export const ProfileSelect = {
   publicId: true,
   nickname: true,

@@ -7,6 +7,7 @@ import {
   updateMyProfile,
 } from "./profiles.controller";
 import upload from "../../middleware/uploadFile";
+import { getPublicPosts } from "../posts/posts.controller";
 
 const router = Router();
 
@@ -34,4 +35,6 @@ router.patch(
 
 router.get("/:profileId", getProfile);
 
+// List posts by profile
+router.get("/:profileId/posts", getPublicPosts);
 export default router;

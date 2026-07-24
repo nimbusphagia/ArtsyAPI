@@ -2,7 +2,7 @@ import z from "zod";
 import {
   MediaResponseSchema,
   MediaSelect,
-  multerFileSchema,
+  MulterFileSchema,
 } from "../media/media.validators";
 import * as CommentValidators from "./comments/comments.validators";
 import * as LikeValidators from "./likes/likes.validators";
@@ -38,8 +38,7 @@ export type PostLazyRes = z.infer<typeof PostLazyResponseSchema>;
 // Post Create
 export const PostRequestSchema = z.object({
   description: z.string().optional(),
-  files: multerFileSchema.array(),
-  private: z.boolean(),
+  files: MulterFileSchema.array().nonempty(),
 });
 export type PostReq = z.infer<typeof PostRequestSchema>;
 

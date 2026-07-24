@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
-import { listPostsByProfile } from "./posts.service";
+import { createPost, listPostsByProfile } from "./posts.service";
 import { publicIdSchema } from "../../config/utils/validationUtils";
+import { PostRequestSchema } from "./posts.validators";
 
 export async function getPublicPosts(
   req: Request,
@@ -17,5 +18,24 @@ export async function getPublicPosts(
     res.status(200).json(posts);
   } catch (err) {
     next(err);
+  }
+}
+
+export async function createNewPost(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = PostRequestSchema.parse({
+      files: req.files,
+      ...req.body,
+    });
+    const post = await createPost(data, currentUserId);
+    res.status(201).json(post);
+  } catch (error) {
+    next(error);
   }
 }
