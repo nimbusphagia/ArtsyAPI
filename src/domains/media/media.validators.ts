@@ -25,7 +25,6 @@ export const MediaResponseSchema = z.object({
   bytes: z.number(),
   duration: z.number().nullable(),
   createdAt: z.coerce.date(),
-  postId: z.number().nullable(),
 });
 
 export type MediaRes = z.infer<typeof MediaResponseSchema>;
@@ -74,7 +73,6 @@ export const MediaSelect = {
   bytes: true,
   duration: true,
   createdAt: true,
-  postId: true,
 };
 
 // Assets

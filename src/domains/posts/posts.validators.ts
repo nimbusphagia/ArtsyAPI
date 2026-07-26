@@ -7,6 +7,11 @@ import {
 import * as CommentValidators from "./comments/comments.validators";
 import * as ProfileValidators from "../profiles/profiles.validators";
 import { Prisma } from "../../generated/prisma/client";
+import {
+  PostSlideLazySchema,
+  PostSlideResponseSchema,
+  PostSlideSelect,
+} from "./slides/slides.validators";
 
 const PostBasicSchema = z.object({
   description: z.string().optional(),
@@ -19,7 +24,7 @@ const PostBasicSchema = z.object({
 
 // With relations
 export const PostResponseSchema = PostBasicSchema.extend({
-  media: MediaResponseSchema.array(),
+  slides: PostSlideResponseSchema.array(),
   comments: z.lazy(() => CommentValidators.CommentResponseSchema.array()),
   likes: z.number(),
 });
@@ -27,7 +32,7 @@ export type PostRes = z.infer<typeof PostResponseSchema>;
 
 // Lazy
 export const PostLazyResponseSchema = PostBasicSchema.extend({
-  thumbnails: MediaResponseSchema.array(),
+  slides: PostSlideLazySchema.array(),
   stats: z.object({
     comments: z.number().nonnegative(),
     likes: z.number().nonnegative(),
@@ -55,7 +60,7 @@ export const PostLazySelect = {
   createdAt: true,
   publicId: true,
   description: true,
-  media: { select: MediaSelect },
+  slides: { select: PostSlideSelect },
   private: true,
   views: true,
   _count: {
@@ -72,7 +77,7 @@ export const PostSelect = {
   },
   publicId: true,
   description: true,
-  media: { select: MediaSelect },
+  slides: { select: PostSlideSelect },
   private: true,
   views: true,
   get comments() {

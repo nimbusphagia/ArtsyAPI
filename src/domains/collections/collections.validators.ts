@@ -1,8 +1,9 @@
 import z from "zod";
-import { PostResponseSchema } from "../posts/posts.validators";
-import { MediaResponseSchema, MediaSelect } from "../media/media.validators";
+import { PostLazySelect, PostResponseSchema } from "../posts/posts.validators";
+import { MediaSelect } from "../media/media.validators";
 import { LikeResponseSchema } from "./likes/likes.validators";
 import * as ProfileValidators from "../profiles/profiles.validators";
+import { PostSlideLazySchema } from "../posts/slides/slides.validators";
 
 const CollectionBasicSchema = z.object({
   publicId: z.uuidv7(),
@@ -15,7 +16,7 @@ const CollectionBasicSchema = z.object({
 
 // Lazy
 export const CollectionLazyResponseSchema = CollectionBasicSchema.extend({
-  thumbnails: MediaResponseSchema.array(),
+  slides: PostSlideLazySchema.array(),
   likes: z.number(),
 });
 export type CollectionLazyRes = z.infer<typeof CollectionLazyResponseSchema>;
@@ -32,7 +33,7 @@ export const CollectionLazySelect = {
   publicId: true,
   name: true,
   createdAt: true,
-  posts: { select: { publicId: true, media: { select: MediaSelect } } },
+  posts: { select: PostLazySelect },
   _count: {
     select: {
       likes: true,

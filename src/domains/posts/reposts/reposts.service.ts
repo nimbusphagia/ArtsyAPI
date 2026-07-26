@@ -8,11 +8,7 @@ import {
   ProfileLazySelect,
 } from "../../profiles/profiles.validators";
 import { PostLazySelect } from "../posts.validators";
-import {
-  RepostLazyRes,
-  RepostLazyResponseSchema,
-  RepostLazySelect,
-} from "./reposts.validators";
+import { RepostLazyRes, RepostLazyResponseSchema } from "./reposts.validators";
 
 // Get all reposts by user
 export async function getRepostsByUser(
@@ -37,7 +33,7 @@ export async function getRepostsByUser(
     rawReposts.map((r) => {
       return {
         ...r,
-        post: { ...r.post, thumbnails: r.post.media, stats: r.post._count },
+        post: { ...r.post, stats: r.post._count },
       };
     }),
   );
@@ -74,7 +70,6 @@ export async function createRepost(postId: string, currentUserId: string) {
     ...rawRepost,
     post: {
       ...rawRepost.post,
-      thumbnails: rawRepost.post.media,
       stats: rawRepost.post._count,
     },
   });

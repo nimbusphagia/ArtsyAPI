@@ -129,7 +129,6 @@ export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
   const parsedPosts = PostValidators.PostLazyResponseSchema.array().parse(
     profile.posts.map((p) => ({
       ...p,
-      thumbnails: p.media,
       stats: p._count,
     })),
   );
@@ -138,7 +137,6 @@ export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
     profile.reposts.map((r) => ({
       ...r,
       post: {
-        thumbnails: r.post.media,
         stats: r.post._count,
       },
     })),
@@ -147,7 +145,7 @@ export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
   const parsedCollections = CollectionLazyResponseSchema.array().parse(
     profile.collections.map((c) => ({
       ...c,
-      thumbnails: c.posts.flatMap((p) => p.media).slice(0, 10),
+      slides: c.posts.flatMap((p) => p.slides).slice(0, 10),
       likes: c._count.likes,
     })),
   );

@@ -52,7 +52,6 @@ export async function listPostsByProfile(
     posts.map((p) => {
       return {
         ...p,
-        thumbnails: p.media,
         stats: p._count,
       };
     }),
@@ -72,15 +71,17 @@ export async function createPost(data: PostCreateReq, currentUserId: string) {
   const uploadedImages = await Promise.all(
     files.map(async (m) => toMediaData(await uploadImage(m.buffer, "artsy"))),
   );
-
   const post = await prisma.post.create({
     data: {
       authorId: currentUser.profile!.id,
       ...(description && { description }),
-      media: {
-        createMany: {
-          data: uploadedImages,
-        },
+      slides: {
+        create: uploadedImages.map((image, index) => ({
+          position: index,
+          media: {
+            create: image,
+          },
+        })),
       },
     },
     select: { ...PostLazySelect, author: { select: ProfileLazySelect } },
@@ -88,7 +89,6 @@ export async function createPost(data: PostCreateReq, currentUserId: string) {
 
   return PostLazyResponseSchema.parse({
     ...post,
-    thumbnails: post.media,
     stats: post._count,
   });
 }
@@ -116,7 +116,6 @@ export async function editPost(data: PostEditReq, currentUserId: string) {
 
   return PostLazyResponseSchema.parse({
     ...post,
-    thumbnails: post.media,
     stats: post._count,
   });
 }
@@ -146,7 +145,6 @@ export async function listMyPosts(
     posts.map((p) => {
       return {
         ...p,
-        thumbnails: p.media,
         stats: p._count,
       };
     }),

@@ -83,7 +83,7 @@ model Post {
   createdAt   DateTime @default(now())
   private     Boolean  @default(false)
   views       Int      @default(0)
-  media        Media[] 
+  slides      PostSlide[] 
   comments     Comment[]
   likes        PostLike[]
   reposts      Repost[]
@@ -92,7 +92,16 @@ model Post {
   notifications Notification[]
   @@index([authorId, createdAt])
 }
-
+model PostSlide {
+  id           Int       @id @default(autoincrement())
+  publicId     String    @unique @default(uuid(7)) @db.Uuid
+  media        Media?    @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  mediaId      Int?      @unique 
+  position     Int
+  postId  Int
+  post Post   @relation(fields:[postId], references:[id], onDelete:Cascade)
+    @@unique([postId, position])
+}
 model Media {
   id           Int      @id @default(autoincrement())
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
@@ -107,8 +116,7 @@ model Media {
   bytes        Int                                     
   duration     Float?                                 
   createdAt    DateTime @default(now())
-  postId      Int?
-  post        Post? @relation(fields:[postId], references:[id], onDelete:Cascade)
+  postSlide        PostSlide? 
   asset   Asset[] 
 }
 model Asset {
