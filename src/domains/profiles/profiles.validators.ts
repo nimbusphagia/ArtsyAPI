@@ -21,7 +21,6 @@ export const ProfileLazyResponseSchema = z.object({
   publicId: z.uuidv7(),
   nickname: z.string().optional(),
   picture: AssetResSchema,
-  banner: AssetResSchema,
   createdAt: z.coerce.date(),
 });
 
@@ -29,6 +28,7 @@ export type ProfileLazyRes = z.infer<typeof ProfileLazyResponseSchema>;
 
 // With relations(loaded lazily)
 export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
+  banner: AssetResSchema,
   followerCount: z.number(),
   followingCount: z.number(),
   blocking: ItemPublicSchema.array(),
@@ -80,7 +80,6 @@ export const ProfileLazySelect = {
   nickname: true,
   createdAt: true,
   picture: { select: AssetSelect },
-  banner: { select: AssetSelect },
 };
 
 export const ProfileSelect = {

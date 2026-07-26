@@ -174,7 +174,6 @@ export async function getPostById(
     select: PostSelect,
   });
   if (!post) throw new NotFoundError("Post not found");
-  console.log("comments count: ", post.comments);
   const parsedPosts = PostResponseSchema.parse({
     ...post,
     comments: post.comments.map((c) => {

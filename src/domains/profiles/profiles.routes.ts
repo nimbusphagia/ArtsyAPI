@@ -8,11 +8,17 @@ import {
 } from "./profiles.controller";
 import upload from "../../middleware/uploadFile";
 import { getPublicPosts } from "../posts/posts.controller";
+import { listMyReposts } from "../posts/reposts/reposts.controller";
 
 const router = Router();
 
+// List profiles
 router.get("/", getProfiles);
 
+// List reposts by profile
+router.get("/reposts", listMyReposts);
+
+// Create profile for the first time
 router.post(
   "/",
   upload.fields([
@@ -22,8 +28,10 @@ router.post(
   initiateProfile,
 );
 
+// Get current user's profile
 router.get("/me", getMyProfile);
 
+// Edit current user's profile
 router.patch(
   "/me",
   upload.fields([
@@ -33,6 +41,7 @@ router.patch(
   updateMyProfile,
 );
 
+// Get any profile
 router.get("/:profileId", getProfile);
 
 // List posts by profile

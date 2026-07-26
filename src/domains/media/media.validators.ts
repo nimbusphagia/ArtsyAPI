@@ -30,6 +30,20 @@ export const MediaResponseSchema = z.object({
 
 export type MediaRes = z.infer<typeof MediaResponseSchema>;
 
+// Lazy (Thumbnails)
+export const MediaLazyResponseSchema = z.object({
+  publicId: z.uuidv7(),
+  resourceType: z.string(),
+  format: z.string(),
+  url: z.url(),
+  thumbnail: z.url().nullable(),
+  bytes: z.number(),
+  duration: z.number().nullable(),
+  createdAt: z.coerce.date(),
+});
+
+export type MediaLazyRes = z.infer<typeof MediaLazyResponseSchema>;
+
 // Request
 export const MediaRequestSchema = z.object({
   cloudinaryId: z.string(),
