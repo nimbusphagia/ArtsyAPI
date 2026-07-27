@@ -1,13 +1,56 @@
-import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
 import { ProfileIsNotBlocked } from "../profiles/profiles.validators";
 import {
   CollectionCreateReq,
+  CollectionEditReq,
+  CollectionLazyRes,
+  CollectionLazySelect,
   CollectionRes,
-  CollectionResponseSchema,
   CollectionSelect,
+  parseCollectionLazyRes,
+  parseCollectionRes,
 } from "./collections.validators";
 
+// List by user
+export async function getCollectionsByProfile(
+  profileId: string,
+  currentUserId: string,
+): Promise<CollectionLazyRes[]> {
+  const currentUser = await prisma.user.findFirst({
+    where: {
+      publicId: currentUserId,
+      active: true,
+      profile: {
+        isNot: null,
+      },
+    },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const author = await prisma.profile.findFirst({
+    where: {
+      publicId: profileId,
+      blocking: {
+        none: {
+          blockedId: currentUser.profile!.id,
+        },
+      },
+    },
+    select: {
+      collections: { where: { private: false }, select: CollectionLazySelect },
+    },
+  });
+  if (!author) throw new NotFoundError("Collection author not found");
+  const parsed = author.collections.map((col) => parseCollectionLazyRes(col));
+  return parsed;
+}
+
+// Create
 export async function createCollection(
   data: CollectionCreateReq,
   currentUserId: string,
@@ -18,7 +61,7 @@ export async function createCollection(
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
-  const { name, description, posts } = data;
+  const { name, description, posts, isPrivate } = data;
 
   const foundPosts = await prisma.post.findMany({
     where: {
@@ -44,10 +87,11 @@ export async function createCollection(
     position: p.position,
   }));
 
-  const rawCollection = await prisma.collection.create({
+  const collection = await prisma.collection.create({
     data: {
       name,
-      ...(description && { description }),
+      ...(description?.trim() && { description }),
+      ...(isPrivate !== undefined && { private: isPrivate }),
       ownerId: currentUser.profile!.id,
       posts: {
         createMany: {
@@ -58,18 +102,98 @@ export async function createCollection(
     select: CollectionSelect,
   });
 
-  const parsedCollection = CollectionResponseSchema.parse({
-    ...rawCollection,
-    likes: rawCollection._count.likes,
-    posts: rawCollection.posts.map((colPost) => {
-      return {
-        ...colPost,
-        post: {
-          ...colPost.post,
-          stats: colPost.post._count,
-        },
-      };
-    }),
+  return parseCollectionRes(collection);
+}
+
+// List current user's collections
+export async function getCollections(
+  currentUserId: string,
+): Promise<CollectionLazyRes[]> {
+  const currentUser = await prisma.user.findFirst({
+    where: {
+      publicId: currentUserId,
+      active: true,
+      profile: {
+        isNot: null,
+      },
+    },
+    select: { profile: { select: { id: true } } },
   });
-  return parsedCollection;
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const collections = await prisma.collection.findMany({
+    where: {
+      ownerId: currentUser.profile!.id,
+    },
+    select: CollectionLazySelect,
+  });
+  const parsed = collections.map((col) => parseCollectionLazyRes(col));
+  return parsed;
+}
+
+// Get By Id
+export async function getCollectionById(
+  collectionId: string,
+  currentUserId: string,
+): Promise<CollectionRes> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const collection = await prisma.collection.findFirst({
+    where: {
+      publicId: collectionId,
+      owner: ProfileIsNotBlocked(currentUser.profile!.id),
+      OR: [{ private: false }, { ownerId: currentUser.profile!.id }],
+    },
+    select: CollectionSelect,
+  });
+  if (!collection) throw new NotFoundError("Collection not found");
+
+  return parseCollectionRes(collection);
+}
+
+// Edit
+export async function editCollectionInfo(
+  data: CollectionEditReq,
+  currentUserId: string,
+): Promise<CollectionRes> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const { publicId, name, description, isPrivate } = data;
+
+  const collection = await prisma.collection.update({
+    where: {
+      publicId,
+    },
+    data: {
+      ...(name && { name }),
+      ...(description && { description }),
+      ...(isPrivate !== undefined && { private: isPrivate }),
+    },
+    select: CollectionSelect,
+  });
+
+  return parseCollectionRes(collection);
+}
+
+// Delete
+export async function deleteCollectionById(
+  collectionId: string,
+  currentUserId: string,
+): Promise<void> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  await prisma.collection.delete({
+    where: { ownerId: currentUser.profile!.id, publicId: collectionId },
+  });
 }

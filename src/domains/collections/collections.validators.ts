@@ -7,7 +7,6 @@ import * as ColPostsValidators from "./collectionPosts/collectionPosts.validator
 // Basic schema
 const CollectionBasicSchema = z.object({
   publicId: z.uuidv7(),
-  owner: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
   name: z.string(),
   description: z.string().nullable(),
   private: z.boolean(),
@@ -23,6 +22,7 @@ export type CollectionLazyRes = z.infer<typeof CollectionLazyResponseSchema>;
 
 // Fully loaded
 export const CollectionResponseSchema = CollectionBasicSchema.extend({
+  owner: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
   posts: ColPostsValidators.ColPostResponseSchema.array(),
   likes: z.number(),
 });
@@ -30,9 +30,9 @@ export type CollectionRes = z.infer<typeof CollectionResponseSchema>;
 
 // Create Request
 export const CollectionCreateReqSchema = z.object({
-  name: z.string(),
+  name: z.string().nonempty(),
   description: z.string().optional(),
-  private: z.boolean(),
+  isPrivate: z.boolean().optional(),
   posts: z
     .array(
       z.object({
@@ -53,6 +53,30 @@ export const CollectionCreateReqSchema = z.object({
     ),
 });
 export type CollectionCreateReq = z.infer<typeof CollectionCreateReqSchema>;
+
+// Edit Request
+export const CollectionEditReqSchema = z
+  .object({
+    publicId: z.uuidv7(),
+    name: z.string().trim().min(1, "Name cannot be empty").optional(),
+    description: z
+      .string()
+      .trim()
+      .min(1, "Description cannot be empty")
+      .optional(),
+    isPrivate: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.name !== undefined ||
+      data.description !== undefined ||
+      data.isPrivate !== undefined,
+    {
+      message:
+        "At least one of name, description, or isPrivate must be provided",
+    },
+  );
+export type CollectionEditReq = z.infer<typeof CollectionEditReqSchema>;
 
 // Prisma
 export const CollectionLazySelect = {
@@ -82,3 +106,35 @@ export const CollectionSelect = {
     };
   },
 } satisfies Prisma.CollectionSelect;
+
+// Parse
+type CollectionRaw = Prisma.CollectionGetPayload<{
+  select: typeof CollectionSelect;
+}>;
+type CollectionLazyRaw = Prisma.CollectionGetPayload<{
+  select: typeof CollectionLazySelect;
+}>;
+
+export function parseCollectionLazyRes(
+  collection: CollectionLazyRaw,
+): CollectionLazyRes {
+  return CollectionLazyResponseSchema.parse({
+    ...collection,
+    slides: collection.posts.flatMap((p) => p.post.slides).slice(0, 10),
+    likes: collection._count.likes,
+  });
+}
+
+export function parseCollectionRes(collection: CollectionRaw): CollectionRes {
+  return CollectionResponseSchema.parse({
+    ...collection,
+    likes: collection._count.likes,
+    posts: collection.posts.map((colPost) => ({
+      ...colPost,
+      post: {
+        ...colPost.post,
+        stats: colPost.post._count,
+      },
+    })),
+  });
+}

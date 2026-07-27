@@ -1,7 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { UnauthorizedError } from "../../config/errors/errors";
-import { CollectionCreateReqSchema } from "./collections.validators";
-import { createCollection } from "./collections.service";
+import {
+  CollectionCreateReqSchema,
+  CollectionEditReqSchema,
+} from "./collections.validators";
+import {
+  createCollection,
+  deleteCollectionById,
+  editCollectionInfo,
+  getCollectionById,
+  getCollections,
+  getCollectionsByProfile,
+} from "./collections.service";
+import { publicIdSchema } from "../../config/utils/validationUtils";
 
 export async function createNewCollection(
   req: Request,
@@ -16,6 +27,88 @@ export async function createNewCollection(
     });
     const collection = await createCollection(data, currentUserId);
     res.status(201).json(collection);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function editCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = CollectionEditReqSchema.parse({
+      ...req.body,
+      publicId: req.params.collectionId,
+    });
+    const collection = await editCollectionInfo(data, currentUserId);
+    res.status(200).json(collection);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listCollectionsByProfile(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const profileId = publicIdSchema.parse(req.params.profileId);
+    const collections = await getCollectionsByProfile(profileId, currentUserId);
+    res.status(200).json(collections);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listMyCollections(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const collections = await getCollections(currentUserId);
+    res.status(200).json(collections);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const collectionId = publicIdSchema.parse(req.params.collectionId);
+    const collection = await getCollectionById(collectionId, currentUserId);
+    res.status(200).json(collection);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const collectionId = publicIdSchema.parse(req.params.collectionId);
+    await deleteCollectionById(collectionId, currentUserId);
+    res.status(204).end();
   } catch (error) {
     next(error);
   }

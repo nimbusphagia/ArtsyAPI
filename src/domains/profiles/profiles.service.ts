@@ -6,7 +6,6 @@ import {
 
 import { prisma } from "../../config/prisma";
 import {
-  mapProfileToRes,
   PrivateProfileSelect,
   ProfileIsNotBlocked,
   ProfileLazyRes,
@@ -15,6 +14,7 @@ import {
   ProfileRes,
   ProfileSelect,
   ProfileLazySelect,
+  parseProfileRes,
 } from "./profiles.validators";
 import { uploadProfileAsset } from "../media/media.service";
 
@@ -145,7 +145,7 @@ export async function getProfileById(
   });
   if (!profile) throw new NotFoundError("User not found.");
 
-  return mapProfileToRes(profile);
+  return parseProfileRes(profile);
 }
 
 // Get My Profile
@@ -164,7 +164,7 @@ export async function getCurrentProfile(
   });
   if (!profile) throw new NotFoundError("Profile not found.");
 
-  return mapProfileToRes(profile);
+  return parseProfileRes(profile);
 }
 // Edit My Profile
 export async function editProfile(
@@ -194,7 +194,7 @@ export async function editProfile(
 
   if (!profile) throw new NotFoundError("Profile not found.");
 
-  return mapProfileToRes(profile);
+  return parseProfileRes(profile);
 }
 
 // Upload profile picture

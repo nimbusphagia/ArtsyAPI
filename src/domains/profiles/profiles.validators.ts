@@ -35,9 +35,7 @@ export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
     }).array(),
   ),
   reposts: RepostLazyResponseSchema.array(),
-  collections: CollectionValidators.CollectionLazyResponseSchema.omit({
-    owner: true,
-  }).array(),
+  collections: CollectionValidators.CollectionLazyResponseSchema.array(),
 });
 export type ProfileRes = z.infer<typeof ProfileResponseSchema>;
 
@@ -104,6 +102,7 @@ export const ProfileSelect = {
 // Derive Private Profile Prisma Select
 export const PrivateProfileSelect = () =>
   buildProfileSelect({ includeInactive: true });
+
 export function buildProfileSelect(opts: { includeInactive?: boolean } = {}) {
   return {
     ...ProfileSelect,
@@ -119,11 +118,11 @@ export function buildProfileSelect(opts: { includeInactive?: boolean } = {}) {
 }
 
 // Map PrismaProfile to ProfileRes
-type ProfileWithRelations = Prisma.ProfileGetPayload<{
+type ProfileRaw = Prisma.ProfileGetPayload<{
   select: typeof ProfileSelect;
 }>;
 
-export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
+export function parseProfileRes(profile: ProfileRaw): ProfileRes {
   const parsedPosts = PostValidators.PostLazyResponseSchema.array().parse(
     profile.posts.map((p) => ({
       ...p,
