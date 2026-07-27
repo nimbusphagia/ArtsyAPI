@@ -5,28 +5,23 @@ import {
   RepostLazyResponseSchema,
   RepostLazySelect,
 } from "../posts/reposts/reposts.validators";
-import {
-  CollectionLazyResponseSchema,
-  CollectionLazySelect,
-} from "../collections/collections.validators";
-import {
-  AssetResSchema,
-  AssetSelect,
-  MulterFileSchema,
-} from "../media/media.validators";
+import * as CollectionValidators from "../collections/collections.validators";
+import { MulterFileSchema } from "../media/media.validators";
+import { AssetResSchema, AssetSelect } from "../media/assets/assets.validators";
 import { ItemPublicSchema } from "../../config/utils/validationUtils";
 
 // Lazy
 export const ProfileLazyResponseSchema = z.object({
   publicId: z.uuidv7(),
-  nickname: z.string().optional(),
+  nickname: z.string(),
+  description: z.string().nullable(),
   picture: AssetResSchema,
   createdAt: z.coerce.date(),
 });
 
 export type ProfileLazyRes = z.infer<typeof ProfileLazyResponseSchema>;
 
-// With relations(loaded lazily)
+// Fully loaded
 export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
   banner: AssetResSchema,
   followerCount: z.number(),
@@ -40,11 +35,13 @@ export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
     }).array(),
   ),
   reposts: RepostLazyResponseSchema.array(),
-  collections: CollectionLazyResponseSchema.omit({ owner: true }).array(),
+  collections: CollectionValidators.CollectionLazyResponseSchema.omit({
+    owner: true,
+  }).array(),
 });
 export type ProfileRes = z.infer<typeof ProfileResponseSchema>;
 
-// Profile List Query
+// Profile Query
 export const ProfileQuerySchema = z.object({
   nickname: z.string().optional(),
   createdAt: z.enum(["asc", "desc"]).default("desc"),
@@ -53,9 +50,10 @@ export const ProfileQuerySchema = z.object({
 
 export type ProfileListQuery = z.infer<typeof ProfileQuerySchema>;
 
-// Profile Create Request
+// Create Request
 export const ProfileRequestSchema = z.object({
   nickname: z.string().optional(),
+  description: z.string().optional(),
   pictureFile: MulterFileSchema.optional(),
   bannerFile: MulterFileSchema.optional(),
 });
@@ -78,15 +76,13 @@ export function ProfileIsNotBlocked(profileId: number) {
 export const ProfileLazySelect = {
   publicId: true,
   nickname: true,
+  description: true,
   createdAt: true,
   picture: { select: AssetSelect },
-};
+} satisfies Prisma.ProfileSelect;
 
 export const ProfileSelect = {
-  publicId: true,
-  nickname: true,
-  createdAt: true,
-  picture: { select: AssetSelect },
+  ...ProfileLazySelect,
   banner: { select: AssetSelect },
   blocking: { select: { publicId: true } },
   blockedBy: { select: { publicId: true } },
@@ -94,7 +90,9 @@ export const ProfileSelect = {
     return { select: PostValidators.PostLazySelect };
   },
   reposts: { select: RepostLazySelect },
-  collections: { select: CollectionLazySelect },
+  get collections() {
+    return { select: CollectionValidators.CollectionLazySelect };
+  },
   _count: {
     select: {
       followers: true,
@@ -142,13 +140,14 @@ export function mapProfileToRes(profile: ProfileWithRelations): ProfileRes {
     })),
   );
 
-  const parsedCollections = CollectionLazyResponseSchema.array().parse(
-    profile.collections.map((c) => ({
-      ...c,
-      slides: c.posts.flatMap((p) => p.slides).slice(0, 10),
-      likes: c._count.likes,
-    })),
-  );
+  const parsedCollections =
+    CollectionValidators.CollectionLazyResponseSchema.array().parse(
+      profile.collections.map((c) => ({
+        ...c,
+        slides: c.posts.flatMap((p) => p.post.slides).slice(0, 10),
+        likes: c._count.likes,
+      })),
+    );
 
   return ProfileResponseSchema.parse({
     ...profile,

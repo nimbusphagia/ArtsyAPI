@@ -1,10 +1,11 @@
+import { Prisma } from "../../generated/prisma/client";
 import z from "zod";
-import { PostLazySelect, PostResponseSchema } from "../posts/posts.validators";
-import { MediaSelect } from "../media/media.validators";
 import { LikeResponseSchema } from "./likes/likes.validators";
 import * as ProfileValidators from "../profiles/profiles.validators";
 import { PostSlideLazySchema } from "../posts/slides/slides.validators";
+import * as ColPostsValidators from "./collectionPosts/collectionPosts.validators";
 
+// Basic schema
 const CollectionBasicSchema = z.object({
   publicId: z.uuidv7(),
   owner: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
@@ -21,9 +22,9 @@ export const CollectionLazyResponseSchema = CollectionBasicSchema.extend({
 });
 export type CollectionLazyRes = z.infer<typeof CollectionLazyResponseSchema>;
 
-// With relations
+// Fully loaded
 export const CollectionResponseSchema = CollectionBasicSchema.extend({
-  posts: PostResponseSchema,
+  posts: ColPostsValidators.ColPostResponseSchema,
   likes: LikeResponseSchema.array(),
 });
 export type CollectionRes = z.infer<typeof CollectionResponseSchema>;
@@ -33,11 +34,13 @@ export const CollectionLazySelect = {
   publicId: true,
   name: true,
   createdAt: true,
-  posts: { select: PostLazySelect },
+  get posts() {
+    return { select: ColPostsValidators.ColPostSelect };
+  },
   _count: {
     select: {
       likes: true,
     },
   },
   private: true,
-};
+} satisfies Prisma.CollectionSelect;

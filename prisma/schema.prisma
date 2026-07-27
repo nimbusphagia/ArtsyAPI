@@ -27,6 +27,7 @@ model Profile{
   user      User     @relation(fields:[userId], references:[id], onDelete:Cascade)
   userId     Int  @unique
   nickname  String
+  description  String?
   pictureId Int
   picture Asset @relation("ProfilePicture",fields:[pictureId], references:[id])
   bannerId Int
@@ -87,7 +88,7 @@ model Post {
   comments     Comment[]
   likes        PostLike[]
   reposts      Repost[]
-  collections   Collection[] 
+  collections   CollectionPost[] 
   messages Message[]
   notifications Notification[]
   @@index([authorId, createdAt])
@@ -95,12 +96,13 @@ model Post {
 model PostSlide {
   id           Int       @id @default(autoincrement())
   publicId     String    @unique @default(uuid(7)) @db.Uuid
-  media        Media?    @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  media        Media?    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   mediaId      Int?      @unique 
   position     Int
   postId  Int
   post Post   @relation(fields:[postId], references:[id], onDelete:Cascade)
-    @@unique([postId, position])
+
+  @@unique([postId, position])
 }
 model Media {
   id           Int      @id @default(autoincrement())
@@ -195,11 +197,23 @@ model Collection {
   name        String
   description String
   private      Boolean @default(false)
-  posts       Post[]
+  posts       CollectionPost[]
   messages Message[]
   likes  CollectionLike[]
   createdAt    DateTime @default(now())
   notifications Notification[]
+
+}
+model CollectionPost {
+  id          Int     @id @default(autoincrement())
+  publicId     String   @unique @default(uuid(7)) @db.Uuid   
+  position     Int   
+  collectionId Int
+  collection Collection @relation(fields:[collectionId], references:[id], onDelete:Cascade)
+  postId      Int
+  post        Post @relation(fields:[postId], references:[id], onDelete:SetNull)
+
+  @@unique([collectionId, postId, position])
 }
 model CollectionLike {
   publicId     String   @unique @default(uuid(7)) @db.Uuid   

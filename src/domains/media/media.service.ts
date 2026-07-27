@@ -1,6 +1,7 @@
 import cloudinary from "../../config/cloudinary";
 import { UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
-import { AssetType, AssetTypeSchema, MulterFile } from "./media.validators";
+import { MulterFile } from "./media.validators";
+import { AssetType, AssetTypeSchema } from "./assets/assets.validators";
 import { prisma } from "../../config/prisma";
 
 // Upload file to cloudinary

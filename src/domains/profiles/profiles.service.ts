@@ -117,6 +117,7 @@ export async function createProfile(
       pictureId: pictureId!,
       bannerId: bannerId!,
       nickname: data.nickname ?? `${user.firstName} ${user.lastName}`,
+      ...(data.description?.trim() && { description: data.description.trim() }),
     },
     select: ProfileLazySelect,
   });
@@ -175,7 +176,7 @@ export async function editProfile(
     select: { profile: { select: { id: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
-  const { nickname, pictureFile, bannerFile } = data;
+  const { nickname, description, pictureFile, bannerFile } = data;
   const [pictureId, bannerId] = await uploadProfileAssets(
     { pictureFile, bannerFile },
     false,
@@ -186,6 +187,7 @@ export async function editProfile(
       ...(pictureId && { pictureId }),
       ...(bannerId && { bannerId }),
       ...(nickname?.trim() && { nickname: nickname.trim() }),
+      ...(description?.trim() && { description: description.trim() }),
     },
     select: ProfileSelect,
   });
