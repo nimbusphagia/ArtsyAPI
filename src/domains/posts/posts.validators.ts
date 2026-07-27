@@ -14,7 +14,7 @@ import {
 } from "./slides/slides.validators";
 
 const PostBasicSchema = z.object({
-  description: z.string().optional(),
+  description: z.string().nullable(),
   createdAt: z.coerce.date(),
   publicId: z.uuidv7(),
   author: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
@@ -69,7 +69,8 @@ export const PostLazySelect = {
       likes: true,
     },
   },
-};
+} satisfies Prisma.PostSelect;
+
 export const PostSelect = {
   createdAt: true,
   get author() {

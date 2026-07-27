@@ -197,7 +197,7 @@ export async function editProfile(
   return mapProfileToRes(profile);
 }
 
-/* Utils */
+// Upload profile picture
 async function uploadProfileAssets(
   { pictureFile, bannerFile }: ProfileReq,
   strictUpload?: boolean,

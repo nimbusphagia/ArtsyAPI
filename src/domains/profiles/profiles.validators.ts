@@ -14,7 +14,6 @@ import { ItemPublicSchema } from "../../config/utils/validationUtils";
 export const ProfileLazyResponseSchema = z.object({
   publicId: z.uuidv7(),
   nickname: z.string(),
-  description: z.string().nullable(),
   picture: AssetResSchema,
   createdAt: z.coerce.date(),
 });
@@ -23,6 +22,7 @@ export type ProfileLazyRes = z.infer<typeof ProfileLazyResponseSchema>;
 
 // Fully loaded
 export const ProfileResponseSchema = ProfileLazyResponseSchema.extend({
+  description: z.string().nullable(),
   banner: AssetResSchema,
   followerCount: z.number(),
   followingCount: z.number(),
@@ -76,13 +76,13 @@ export function ProfileIsNotBlocked(profileId: number) {
 export const ProfileLazySelect = {
   publicId: true,
   nickname: true,
-  description: true,
   createdAt: true,
   picture: { select: AssetSelect },
 } satisfies Prisma.ProfileSelect;
 
 export const ProfileSelect = {
   ...ProfileLazySelect,
+  description: true,
   banner: { select: AssetSelect },
   blocking: { select: { publicId: true } },
   blockedBy: { select: { publicId: true } },
