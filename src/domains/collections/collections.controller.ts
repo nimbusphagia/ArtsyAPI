@@ -170,7 +170,7 @@ export async function removePostFromCollection(
       collectionId: req.params.collectionId,
     });
     const collection = await deleteCollectionPost(data, currentUserId);
-    res.status(201).json(collection);
+    res.status(204).json(collection);
   } catch (error) {
     next(error);
   }
