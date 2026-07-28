@@ -20,6 +20,12 @@ import {
   createCollectionPost,
   deleteCollectionPost,
 } from "./collectionPosts/collectionPosts.service";
+import { LikeRequestSchema } from "./likes/likes.validators";
+import {
+  createCollectionLike,
+  deleteCollectionLike,
+  getLikesByCollection,
+} from "./likes/likes.service";
 
 export async function createNewCollection(
   req: Request,
@@ -169,8 +175,55 @@ export async function removePostFromCollection(
       ...req.body,
       collectionId: req.params.collectionId,
     });
-    const collection = await deleteCollectionPost(data, currentUserId);
-    res.status(204).json(collection);
+    await deleteCollectionPost(data, currentUserId);
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function likeCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = LikeRequestSchema.parse({ ...req.params });
+    const like = await createCollectionLike(data, currentUserId);
+    res.status(201).json(like);
+  } catch (error) {
+    next(error);
+  }
+}
+export async function removeLikeFromCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = LikeRequestSchema.parse({ ...req.params });
+    await deleteCollectionLike(data, currentUserId);
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listCollectionLikes(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = LikeRequestSchema.parse({ ...req.params });
+    const collections = await getLikesByCollection(data, currentUserId);
+    res.status(200).json(collections);
   } catch (error) {
     next(error);
   }
