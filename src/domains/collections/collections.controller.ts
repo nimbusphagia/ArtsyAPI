@@ -15,6 +15,11 @@ import {
   updateCollectionPosts,
 } from "./collections.service";
 import { publicIdSchema } from "../../config/utils/validationUtils";
+import { ColPostReqSchema } from "./collectionPosts/collectionPosts.validators";
+import {
+  createCollectionPost,
+  deleteCollectionPost,
+} from "./collectionPosts/collectionPosts.service";
 
 export async function createNewCollection(
   req: Request,
@@ -128,6 +133,43 @@ export async function reorderCollection(
       publicId: req.params.collectionId,
     });
     const collection = await updateCollectionPosts(data, currentUserId);
+    res.status(200).json(collection);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function addPostToCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = ColPostReqSchema.parse({
+      ...req.body,
+      collectionId: req.params.collectionId,
+    });
+    const collection = await createCollectionPost(data, currentUserId);
+    res.status(201).json(collection);
+  } catch (error) {
+    next(error);
+  }
+}
+export async function removePostFromCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = ColPostReqSchema.parse({
+      ...req.body,
+      collectionId: req.params.collectionId,
+    });
+    const collection = await deleteCollectionPost(data, currentUserId);
     res.status(201).json(collection);
   } catch (error) {
     next(error);

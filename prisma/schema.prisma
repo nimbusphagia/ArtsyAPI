@@ -211,9 +211,10 @@ model CollectionPost {
   collectionId Int
   collection Collection @relation(fields:[collectionId], references:[id], onDelete:Cascade)
   postId      Int
-  post        Post @relation(fields:[postId], references:[id], onDelete:SetNull)
+  post        Post @relation(fields:[postId], references:[id], onDelete:Cascade)
 
-  @@unique([collectionId, postId, position])
+  @@unique([collectionId, postId])
+  @@unique([collectionId, position])
 }
 model CollectionLike {
   publicId     String   @unique @default(uuid(7)) @db.Uuid   
