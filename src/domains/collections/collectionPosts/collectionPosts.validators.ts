@@ -2,10 +2,7 @@ import { Prisma } from "../../../generated/prisma/client";
 import z from "zod";
 import * as PostValidators from "../../posts/posts.validators";
 import * as ProfileValidators from "../../profiles/profiles.validators";
-import {
-  PostSlideLazySchema,
-  PostSlideSelect,
-} from "../../posts/slides/slides.validators";
+import { PostSlideSelect } from "../../posts/slides/slides.validators";
 
 export const ColPostResponseSchema = z.object({
   publicId: z.uuidv7(),

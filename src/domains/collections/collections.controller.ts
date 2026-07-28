@@ -3,6 +3,7 @@ import { UnauthorizedError } from "../../config/errors/errors";
 import {
   CollectionCreateReqSchema,
   CollectionEditReqSchema,
+  ColPostsEditReqSchema,
 } from "./collections.validators";
 import {
   createCollection,
@@ -11,6 +12,7 @@ import {
   getCollectionById,
   getCollections,
   getCollectionsByProfile,
+  updateCollectionPosts,
 } from "./collections.service";
 import { publicIdSchema } from "../../config/utils/validationUtils";
 
@@ -109,6 +111,24 @@ export async function deleteCollection(
     const collectionId = publicIdSchema.parse(req.params.collectionId);
     await deleteCollectionById(collectionId, currentUserId);
     res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+}
+export async function reorderCollection(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const currentUserId = req.user?.publicId;
+    if (!currentUserId) throw new UnauthorizedError();
+    const data = ColPostsEditReqSchema.parse({
+      ...req.body,
+      publicId: req.params.collectionId,
+    });
+    const collection = await updateCollectionPosts(data, currentUserId);
+    res.status(201).json(collection);
   } catch (error) {
     next(error);
   }

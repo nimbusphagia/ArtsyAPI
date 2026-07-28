@@ -12,6 +12,7 @@ import {
   CollectionLazySelect,
   CollectionRes,
   CollectionSelect,
+  ColPostsEditReq,
   parseCollectionLazyRes,
   parseCollectionRes,
 } from "./collections.validators";
@@ -196,4 +197,67 @@ export async function deleteCollectionById(
   await prisma.collection.delete({
     where: { ownerId: currentUser.profile!.id, publicId: collectionId },
   });
+}
+
+// Update posts positions
+export async function updateCollectionPosts(
+  { publicId, posts }: ColPostsEditReq,
+  currentUserId: string,
+): Promise<CollectionRes> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const collection = await prisma.collection.findUnique({
+    where: { publicId, ownerId: currentUser.profile!.id },
+    select: { posts: { select: { id: true, publicId: true, position: true } } },
+  });
+  if (!collection) throw new NotFoundError("Collection not found");
+
+  const existingByPublicId = new Map(
+    collection.posts.map((p) => [p.publicId, p]),
+  );
+
+  const missing = posts.filter((p) => !existingByPublicId.has(p.publicId));
+  if (missing.length > 0) {
+    throw new ValidationError(
+      `Post(s) not in collection: ${missing.map((p) => p.publicId).join(", ")}`,
+    );
+  }
+  if (posts.length !== collection.posts.length) {
+    throw new ValidationError(
+      "Request must include every post currently in the collection",
+    );
+  }
+
+  const changed = posts.filter(
+    (p) => existingByPublicId.get(p.publicId)!.position !== p.position,
+  );
+
+  if (changed.length > 0) {
+    await prisma.$transaction([
+      ...changed.map((p) =>
+        prisma.collectionPost.update({
+          where: { id: existingByPublicId.get(p.publicId)!.id },
+          data: { position: -p.position },
+        }),
+      ),
+      ...changed.map((p) =>
+        prisma.collectionPost.update({
+          where: { id: existingByPublicId.get(p.publicId)!.id },
+          data: { position: p.position },
+        }),
+      ),
+    ]);
+  }
+
+  const updatedCollection = await prisma.collection.findUnique({
+    where: { publicId, ownerId: currentUser.profile!.id },
+    select: CollectionSelect,
+  });
+  if (!updatedCollection) throw new NotFoundError("Collection not found");
+
+  return parseCollectionRes(updatedCollection);
 }

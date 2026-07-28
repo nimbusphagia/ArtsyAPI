@@ -78,6 +78,30 @@ export const CollectionEditReqSchema = z
   );
 export type CollectionEditReq = z.infer<typeof CollectionEditReqSchema>;
 
+// Edit Request
+export const ColPostsEditReqSchema = z.object({
+  publicId: z.uuidv7(),
+  posts: z
+    .array(
+      z.object({
+        publicId: z.uuidv7(),
+        position: z.number(),
+      }),
+    )
+    .nonempty()
+    .refine(
+      (posts) => {
+        const positions = posts.map((p) => p.position).sort((a, b) => a - b);
+        return positions.every((pos, i) => pos === i + 1);
+      },
+      {
+        message:
+          "Positions must be sequential starting at 1 with no duplicates or gaps",
+      },
+    ),
+});
+export type ColPostsEditReq = z.infer<typeof ColPostsEditReqSchema>;
+
 // Prisma
 export const CollectionLazySelect = {
   publicId: true,
@@ -103,6 +127,9 @@ export const CollectionSelect = {
   get posts() {
     return {
       select: ColPostsValidators.ColPostSelect,
+      orderBy: {
+        position: Prisma.SortOrder.asc,
+      },
     };
   },
 } satisfies Prisma.CollectionSelect;
