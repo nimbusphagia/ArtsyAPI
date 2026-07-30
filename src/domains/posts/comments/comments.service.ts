@@ -79,7 +79,9 @@ export async function getCommentsByPost(
       publicId: postId,
       author: ProfileIsNotBlocked(currentUser.profile!.id),
     },
-    select: { comments: { select: CommentLazySelect } },
+    select: {
+      comments: { select: CommentLazySelect, orderBy: { createdAt: "desc" } },
+    },
   });
   if (!post) throw new NotFoundError("Post not found.");
 
@@ -90,4 +92,59 @@ export async function getCommentsByPost(
     }),
   );
   return parsedComment;
+}
+
+// Like a comment
+export async function likeCommentById(
+  commentId: string,
+  currentUserId: string,
+): Promise<void> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  await prisma.comment.update({
+    where: {
+      publicId: commentId,
+      author: ProfileIsNotBlocked(currentUser.profile!.id),
+    },
+    data: {
+      likes: {
+        create: {
+          ownerId: currentUser.profile!.id,
+        },
+      },
+    },
+  });
+}
+
+// Disike a comment
+export async function dislikeCommentById(
+  commentId: string,
+  currentUserId: string,
+): Promise<void> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const comment = await prisma.comment.findUnique({
+    where: {
+      publicId: commentId,
+      author: ProfileIsNotBlocked(currentUser.profile!.id),
+    },
+    select: { id: true },
+  });
+  if (!comment) throw new NotFoundError("Comment not found");
+
+  await prisma.commentLike.delete({
+    where: {
+      ownerId_commentId: {
+        ownerId: currentUser.profile!.id,
+        commentId: comment.id,
+      },
+    },
+  });
 }

@@ -47,6 +47,7 @@ export async function listPostsByProfile(
   const posts = await prisma.post.findMany({
     where: { authorId: targetProfile.id, private: false },
     select: { ...PostLazySelect, author: { select: ProfileLazySelect } },
+    orderBy: { createdAt: "desc" },
   });
   const parsedPosts = PostLazyResponseSchema.array().parse(
     posts.map((p) => {
