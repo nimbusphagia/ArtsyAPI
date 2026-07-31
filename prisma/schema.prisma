@@ -245,6 +245,7 @@ model ChatMember {
   profile   Profile?          @relation(fields: [profileId], references: [id], onDelete: SetNull)
   profileId Int?        
   isArchived  Boolean  @default(false)
+
   @@unique([chatId, profileId])
 }
 
@@ -266,6 +267,7 @@ model Message {
   postId Int?
   collection Collection? @relation(fields:[collectionId], references:[id])
   collectionId Int?
+
   @@index([chatId,createdAt])
 }
 
