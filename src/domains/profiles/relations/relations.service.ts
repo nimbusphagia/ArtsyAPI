@@ -10,6 +10,9 @@ export async function followProfileById(
   profileId: string,
   currentUserId: string,
 ) {
+  if (profileId === currentUserId) {
+    throw new UnauthorizedError("Cannot follow yourself");
+  }
   const currentUser = await prisma.user.findFirst({
     where: { publicId: currentUserId, active: true, profile: { isNot: null } },
     select: { profile: { select: { id: true } } },
@@ -21,8 +24,8 @@ export async function followProfileById(
   const targetProfile = await prisma.profile.findUnique({
     where: {
       publicId: profileId,
-      blocking: { none: { id: currentProfileId } },
-      blockedBy: { none: { id: currentProfileId } },
+      blocking: { none: { blockedId: currentProfileId } },
+      blockedBy: { none: { blockerId: currentProfileId } },
       user: {
         active: true,
       },
@@ -38,6 +41,7 @@ export async function followProfileById(
     },
   });
 }
+
 // Unfollow
 export async function unfollowProfileById(
   profileId: string,
@@ -92,8 +96,8 @@ export async function getFollowersByProfile(
   const targetProfile = await prisma.profile.findUnique({
     where: {
       publicId: profileId,
-      blocking: { none: { id: currentProfileId } },
-      blockedBy: { none: { id: currentProfileId } },
+      blocking: { none: { blockedId: currentProfileId } },
+      blockedBy: { none: { blockerId: currentProfileId } },
       user: {
         active: true,
       },
@@ -128,8 +132,8 @@ export async function getFollowedProfilesById(
   const targetProfile = await prisma.profile.findUnique({
     where: {
       publicId: profileId,
-      blocking: { none: { id: currentProfileId } },
-      blockedBy: { none: { id: currentProfileId } },
+      blocking: { none: { blockedId: currentProfileId } },
+      blockedBy: { none: { blockerId: currentProfileId } },
       user: {
         active: true,
       },
@@ -145,4 +149,100 @@ export async function getFollowedProfilesById(
 }
 
 // Block
+export async function blockProfileById(
+  profileId: string,
+  currentUserId: string,
+) {
+  if (profileId === currentUserId) {
+    throw new UnauthorizedError("Cannot block yourself");
+  }
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const currentProfileId = currentUser.profile!.id;
+
+  const targetProfile = await prisma.profile.findUnique({
+    where: {
+      publicId: profileId,
+      blockedBy: { none: { blockerId: currentProfileId } },
+      user: {
+        active: true,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!targetProfile) throw new NotFoundError("Profile not found");
+  await prisma.block.create({
+    data: {
+      blockerId: currentProfileId,
+      blockedId: targetProfile.id,
+    },
+  });
+}
+
 // Unblock
+export async function unblockProfileById(
+  profileId: string,
+  currentUserId: string,
+) {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const currentProfileId = currentUser.profile!.id;
+
+  const targetProfile = await prisma.profile.findUnique({
+    where: {
+      publicId: profileId,
+      user: {
+        active: true,
+      },
+      blockedBy: {
+        some: {
+          blockerId: currentProfileId,
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!targetProfile) throw new NotFoundError("Profile not found");
+  await prisma.block.delete({
+    where: {
+      blockerId_blockedId: {
+        blockerId: currentProfileId,
+        blockedId: targetProfile.id,
+      },
+    },
+  });
+}
+
+// List blocked
+export async function getBlockedByProfile(
+  currentUserId: string,
+): Promise<ProfileLazyRes[]> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: {
+      profile: {
+        select: {
+          id: true,
+          blocking: {
+            select: {
+              blocked: { select: ProfileLazySelect },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  return currentUser.profile?.blocking.map((row) => row.blocked) ?? [];
+}
