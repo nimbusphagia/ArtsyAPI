@@ -1,0 +1,148 @@
+import {
+  NotFoundError,
+  UnauthorizedError,
+} from "../../../config/errors/errors";
+import { prisma } from "../../../config/prisma";
+import { ProfileLazyRes, ProfileLazySelect } from "../profiles.validators";
+
+// Follow
+export async function followProfileById(
+  profileId: string,
+  currentUserId: string,
+) {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const currentProfileId = currentUser.profile!.id;
+
+  const targetProfile = await prisma.profile.findUnique({
+    where: {
+      publicId: profileId,
+      blocking: { none: { id: currentProfileId } },
+      blockedBy: { none: { id: currentProfileId } },
+      user: {
+        active: true,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!targetProfile) throw new NotFoundError("Profile not found");
+  await prisma.follow.create({
+    data: {
+      followerId: currentProfileId,
+      followingId: targetProfile.id,
+    },
+  });
+}
+// Unfollow
+export async function unfollowProfileById(
+  profileId: string,
+  currentUserId: string,
+) {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: { profile: { select: { id: true } } },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const currentProfileId = currentUser.profile!.id;
+
+  const targetProfile = await prisma.profile.findUnique({
+    where: {
+      publicId: profileId,
+      user: {
+        active: true,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!targetProfile) throw new NotFoundError("Profile not found");
+  await prisma.follow.delete({
+    where: {
+      followerId_followingId: {
+        followerId: currentProfileId,
+        followingId: targetProfile.id,
+      },
+    },
+  });
+}
+
+// Get followers by profile
+export async function getFollowersByProfile(
+  profileId: string,
+  currentUserId: string,
+): Promise<ProfileLazyRes[]> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: {
+      profile: {
+        select: { id: true },
+      },
+    },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const currentProfileId = currentUser.profile!.id;
+
+  const targetProfile = await prisma.profile.findUnique({
+    where: {
+      publicId: profileId,
+      blocking: { none: { id: currentProfileId } },
+      blockedBy: { none: { id: currentProfileId } },
+      user: {
+        active: true,
+      },
+    },
+    select: {
+      followers: { select: { follower: { select: ProfileLazySelect } } },
+    },
+  });
+
+  if (!targetProfile) throw new NotFoundError("Profile not found");
+
+  return targetProfile.followers.map((row) => row.follower) ?? [];
+}
+
+// Get profiles you follow
+export async function getFollowedProfilesById(
+  profileId: string,
+  currentUserId: string,
+): Promise<ProfileLazyRes[]> {
+  const currentUser = await prisma.user.findFirst({
+    where: { publicId: currentUserId, active: true, profile: { isNot: null } },
+    select: {
+      profile: {
+        select: { id: true },
+      },
+    },
+  });
+  if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+
+  const currentProfileId = currentUser.profile!.id;
+
+  const targetProfile = await prisma.profile.findUnique({
+    where: {
+      publicId: profileId,
+      blocking: { none: { id: currentProfileId } },
+      blockedBy: { none: { id: currentProfileId } },
+      user: {
+        active: true,
+      },
+    },
+    select: {
+      following: { select: { following: { select: ProfileLazySelect } } },
+    },
+  });
+
+  if (!targetProfile) throw new NotFoundError("Profile not found");
+
+  return targetProfile.following.map((row) => row.following) ?? [];
+}
+
+// Block
+// Unblock
