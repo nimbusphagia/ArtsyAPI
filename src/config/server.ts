@@ -4,6 +4,7 @@ import authRouter from "../domains/auth/auth.routes";
 import profilesRouter from "../domains/profiles/profiles.routes";
 import postsRouter from "../domains/posts/posts.routes";
 import collectionsRouter from "../domains/collections/collections.routes";
+import chatsRouter from "../domains/chats/chats.routes";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ErrorHandler } from "./errors/errorHandler";
@@ -26,8 +27,8 @@ app.use(cookieParser());
 app.use("/", authRouter);
 app.use("/profiles", requireAuth, profilesRouter);
 app.use("/posts", requireAuth, postsRouter);
-app.use("/comments", requireAuth, collectionsRouter);
 app.use("/collections", requireAuth, collectionsRouter);
+app.use("/chats", requireAuth, chatsRouter);
 
 app.use(ErrorHandler);
 
