@@ -7,7 +7,6 @@ import {
 import { prisma } from "../../config/prisma";
 import {
   PrivateProfileSelect,
-  ProfileIsNotBlocked,
   ProfileLazyRes,
   ProfileListQuery,
   ProfileReq,
@@ -38,7 +37,7 @@ export async function listProfiles(
     const profile = await prisma.profile.findUnique({
       where: {
         id: currentUser.profile!.id,
-        profile: ProfileIsNotBlocked(currentUser.profile!.id),
+        blocking: { none: { blockedId: currentUser.profile!.id } },
       },
       select: {
         following: {
@@ -62,7 +61,7 @@ export async function listProfiles(
     const profile = await prisma.profile.findUnique({
       where: {
         id: currentUser.profile!.id,
-        profile: ProfileIsNotBlocked(currentUser.profile!.id),
+        blocking: { none: { blockedId: currentUser.profile!.id } },
       },
       select: {
         followers: {
@@ -83,12 +82,10 @@ export async function listProfiles(
   }
 
   return prisma.profile.findMany({
-    ...(nicknameFilter && {
-      where: {
-        nickname: nicknameFilter,
-        profile: ProfileIsNotBlocked(currentUser.profile!.id),
-      },
-    }),
+    where: {
+      ...(nicknameFilter && { nickname: nicknameFilter }),
+      blocking: { none: { blockedId: currentUser.profile!.id } },
+    },
     select: ProfileLazySelect,
     orderBy: { createdAt: query.createdAt },
     take: 20,
@@ -102,10 +99,15 @@ export async function createProfile(
 ): Promise<ProfileLazyRes> {
   const user = await prisma.user.findUnique({
     where: { publicId: currentUserId, active: true },
-    select: { id: true, profile: true, firstName: true, lastName: true },
+    select: {
+      id: true,
+      profile: { select: { id: true } },
+      firstName: true,
+      lastName: true,
+    },
   });
   if (!user) throw new NotFoundError();
-  if (user.profile) throw new ConflictError();
+  if (user.profile?.id) throw new ConflictError();
   const { pictureFile, bannerFile } = data;
   const [pictureId, bannerId] = await uploadProfileAssets(
     { pictureFile, bannerFile },

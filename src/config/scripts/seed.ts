@@ -3,7 +3,7 @@ import { prisma } from "../prisma";
 import fs from "fs";
 import path from "path";
 import type { UploadApiResponse } from "cloudinary";
-import type { AssetType } from "../../domains/media/media.validators";
+import type { AssetType } from "../../generated/prisma/enums";
 
 const IMAGE_FOLDER = path.join(__dirname, "../../assets/images");
 

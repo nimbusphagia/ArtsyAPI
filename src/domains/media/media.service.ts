@@ -1,6 +1,6 @@
 import cloudinary from "../../config/cloudinary";
 import { UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
-import { MulterFile, ProfileImageFile } from "./media.validators";
+import { ProfileImageFile } from "./media.validators";
 import { AssetType, AssetTypeSchema } from "./assets/assets.validators";
 import { prisma } from "../../config/prisma";
 import { isVideoMimetype } from "./meda.constants";

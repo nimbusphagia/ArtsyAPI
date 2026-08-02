@@ -5,5 +5,9 @@ export async function resetDb() {
     prisma.refreshToken.deleteMany(),
     prisma.oAuthAccount.deleteMany(),
     prisma.user.deleteMany(),
+    prisma.asset.deleteMany({
+      where: { type: { in: ["PROFILE_PICTURE", "PROFILE_BANNER"] } },
+    }),
+    prisma.media.deleteMany(),
   ]);
 }
