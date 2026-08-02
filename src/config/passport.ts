@@ -42,6 +42,9 @@ const jwtStrategy = new JwtStrategy(
     try {
       const user = await prisma.user.findUnique({
         where: { publicId: jwt_payload.sub },
+        select: {
+          publicId: true,
+        },
       });
       if (!user) throw new NotFoundError();
       return done(null, user);

@@ -19,7 +19,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "postinstall": "prisma generate",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:migrate": "docker compose exec api npx prisma migrate dev",
     "db:generate": "docker compose exec api npx prisma generate",
     "db:deploy": "docker compose exec api npx prisma migrate deploy",
@@ -55,8 +56,12 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^7.2.1",
+    "dotenv-cli": "^11.0.0",
     "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }

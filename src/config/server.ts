@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
 app.use(cookieParser());
 
-app.use("/", authRouter);
+app.use("/auth", authRouter);
 app.use("/profiles", requireAuth, profilesRouter);
 app.use("/posts", requireAuth, postsRouter);
 app.use("/collections", requireAuth, collectionsRouter);
