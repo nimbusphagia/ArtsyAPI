@@ -6,7 +6,7 @@ import {
   RepostLazySelect,
 } from "../posts/reposts/reposts.validators";
 import * as CollectionValidators from "../collections/collections.validators";
-import { MulterFileSchema } from "../media/media.validators";
+import { ProfileImageFileSchema } from "../media/media.validators";
 import { AssetResSchema, AssetSelect } from "../media/assets/assets.validators";
 import { ItemPublicSchema } from "../../config/utils/validationUtils";
 
@@ -52,8 +52,8 @@ export type ProfileListQuery = z.infer<typeof ProfileQuerySchema>;
 export const ProfileRequestSchema = z.object({
   nickname: z.string().optional(),
   description: z.string().optional(),
-  pictureFile: MulterFileSchema.optional(),
-  bannerFile: MulterFileSchema.optional(),
+  pictureFile: ProfileImageFileSchema.optional(),
+  bannerFile: ProfileImageFileSchema.optional(),
 });
 
 export type ProfileReq = z.infer<typeof ProfileRequestSchema>;

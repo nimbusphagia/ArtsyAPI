@@ -1,9 +1,5 @@
 import z from "zod";
-import {
-  MediaResponseSchema,
-  MediaSelect,
-  MulterFileSchema,
-} from "../media/media.validators";
+import { MulterFileSchema } from "../media/media.validators";
 import * as CommentValidators from "./comments/comments.validators";
 import * as ProfileValidators from "../profiles/profiles.validators";
 import { Prisma } from "../../generated/prisma/client";

@@ -1,5 +1,12 @@
 import z from "zod";
 import { optionalToNull } from "../../config/utils/validationUtils";
+import {
+  IMAGE_MAX_BYTES,
+  IMAGE_MIMETYPES,
+  isImageMimetype,
+  VIDEO_MAX_BYTES,
+  VIDEO_MIMETYPES,
+} from "./meda.constants";
 
 // Response
 export const MediaResponseSchema = z.object({
@@ -19,7 +26,7 @@ export const MediaResponseSchema = z.object({
 
 export type MediaRes = z.infer<typeof MediaResponseSchema>;
 
-// Lazy (Thumbnails)
+// Lazy
 export const MediaLazyResponseSchema = z.object({
   publicId: z.uuidv7(),
   resourceType: z.string(),
@@ -66,16 +73,36 @@ export const MediaSelect = {
 };
 
 // Multer
-export const MulterFileSchema = z.object({
-  fieldname: z.string(),
-  originalname: z.string(),
-  encoding: z.string(),
-  mimetype: z.enum(["image/jpeg", "image/png", "image/webp"]),
-  size: z.number().max(5 * 1024 * 1024, "File must be smaller than 5MB"),
-  buffer: z.instanceof(Buffer),
-  destination: z.string().optional(),
-  filename: z.string().optional(),
-  path: z.string().optional(),
-});
-
+export const MulterFileSchema = z
+  .object({
+    fieldname: z.string(),
+    originalname: z.string(),
+    encoding: z.string(),
+    mimetype: z.enum([...IMAGE_MIMETYPES, ...VIDEO_MIMETYPES]),
+    size: z.number(),
+    buffer: z.instanceof(Buffer),
+    destination: z.string().optional(),
+    filename: z.string().optional(),
+    path: z.string().optional(),
+  })
+  .superRefine((file, ctx) => {
+    const isImage = isImageMimetype(file.mimetype);
+    const max = isImage ? IMAGE_MAX_BYTES : VIDEO_MAX_BYTES;
+    if (file.size > max) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["size"],
+        message: `File must be smaller than ${max / (1024 * 1024)}MB for ${
+          isImage ? "images" : "videos"
+        }`,
+      });
+    }
+  });
 export type MulterFile = z.infer<typeof MulterFileSchema>;
+
+// Profile Assets
+export const ProfileImageFileSchema = MulterFileSchema.refine(
+  (file) => isImageMimetype(file.mimetype),
+  { message: "Profile pictures and banners must be an image" },
+);
+export type ProfileImageFile = z.infer<typeof ProfileImageFileSchema>;

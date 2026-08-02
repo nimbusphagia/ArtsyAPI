@@ -4,7 +4,7 @@ import {
   ValidationError,
 } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
-import { toMediaData, uploadImage } from "../media/media.service";
+import { toMediaData, uploadMedia } from "../media/media.service";
 import {
   ProfileIsNotBlocked,
   ProfileLazySelect,
@@ -69,18 +69,21 @@ export async function createPost(data: PostCreateReq, currentUserId: string) {
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
   const { description, files } = data;
-  const uploadedImages = await Promise.all(
-    files.map(async (m) => toMediaData(await uploadImage(m.buffer, "artsy"))),
+  const uploadedMedia = await Promise.all(
+    files.map(async (m) =>
+      toMediaData(await uploadMedia(m.buffer, m.mimetype, "artsy")),
+    ),
   );
+
   const post = await prisma.post.create({
     data: {
       authorId: currentUser.profile!.id,
       ...(description && { description }),
       slides: {
-        create: uploadedImages.map((image, index) => ({
+        create: uploadedMedia.map((media, index) => ({
           position: index,
           media: {
-            create: image,
+            create: media,
           },
         })),
       },
