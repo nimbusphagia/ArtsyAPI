@@ -5,8 +5,8 @@ import {
   deletePostById,
   editPost,
   getPostById,
-  listMyPosts,
-  listPostsByProfile,
+  getMyPosts,
+  getPostsByProfile,
 } from "./posts.service";
 import { publicIdSchema } from "../../config/utils/validationUtils";
 import {
@@ -14,7 +14,7 @@ import {
   PostEditRequestSchema,
 } from "./posts.validators";
 
-export async function getMyPosts(
+export async function listMyPosts(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -22,13 +22,13 @@ export async function getMyPosts(
   try {
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
-    const posts = await listMyPosts(currentUserId);
+    const posts = await getMyPosts(currentUserId);
     res.status(200).json(posts);
   } catch (err) {
     next(err);
   }
 }
-export async function getPublicPosts(
+export async function listPublicPosts(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -38,7 +38,7 @@ export async function getPublicPosts(
     if (!currentUserId) throw new UnauthorizedError();
     const profileId = publicIdSchema.parse(req.params.profileId);
     if (!profileId) throw new NotFoundError("No profile id was provided");
-    const posts = await listPostsByProfile(profileId, currentUserId);
+    const posts = await getPostsByProfile(profileId, currentUserId);
     res.status(200).json(posts);
   } catch (err) {
     next(err);

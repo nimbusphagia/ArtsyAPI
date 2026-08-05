@@ -1,16 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import request from "supertest";
-import { app } from "../src/config/server";
-import { prisma } from "../src/config/prisma";
-import { resetDb } from "./helpers/resetDb";
-import { getAuthenticatedUser } from "./helpers/auth";
-import { getUserWithProfile } from "./helpers/profile";
+import { app } from "../../src/config/server";
+import { prisma } from "../../src/config/prisma";
+import { resetDb } from "../helpers/resetDb";
+import { getAuthenticatedUser } from "../helpers/auth";
+import { getUserWithProfile } from "../helpers/profile";
+import { createPostAsUser } from "../helpers/posts";
 
 const { uploadStreamMock } = vi.hoisted(() => ({
   uploadStreamMock: vi.fn(),
 }));
 
-vi.mock("../src/config/cloudinary", () => ({
+vi.mock("../../src/config/cloudinary", () => ({
   default: {
     uploader: {
       upload_stream: uploadStreamMock,
@@ -20,8 +21,29 @@ vi.mock("../src/config/cloudinary", () => ({
   },
 }));
 
+let uploadCallCount = 0;
+
 beforeEach(async () => {
   await resetDb();
+  uploadCallCount = 0;
+  uploadStreamMock.mockReset();
+  uploadStreamMock.mockImplementation((_options: any, callback: any) => {
+    const callIndex = uploadCallCount++;
+    return {
+      end: () => {
+        callback(undefined, {
+          public_id: `fake_public_id_${callIndex}`,
+          asset_id: `fake_asset_id_${callIndex}`,
+          resource_type: "image",
+          format: "jpg",
+          secure_url: `https://example.com/fake_${callIndex}.jpg`,
+          width: 500,
+          height: 500,
+          bytes: 12345,
+        });
+      },
+    };
+  });
 });
 
 describe("POST /profiles", () => {
@@ -77,8 +99,6 @@ describe("GET /profiles/me", () => {
   });
 
   it("returns 401 (per getCurrentProfile logic) if no profile exists yet", async () => {
-    // getCurrentProfile's currentUser lookup requires profile: { isNot: null },
-    // so a user without a profile fails that check → UnauthorizedError, not 404
     const { accessToken } = await getAuthenticatedUser();
 
     const res = await request(app)
@@ -171,24 +191,6 @@ describe("GET /profiles", () => {
 });
 
 describe("POST /profiles with an uploaded picture (Cloudinary mocked)", () => {
-  beforeEach(() => {
-    uploadStreamMock.mockReset();
-    uploadStreamMock.mockImplementation((_options: any, callback: any) => ({
-      end: () => {
-        callback(undefined, {
-          public_id: "fake_public_id",
-          asset_id: "fake_asset_id",
-          resource_type: "image",
-          format: "jpg",
-          secure_url: "https://example.com/fake.jpg",
-          width: 500,
-          height: 500,
-          bytes: 12345,
-        });
-      },
-    }));
-  });
-
   it("uploads a picture and stores real Asset/Media rows", async () => {
     const { accessToken } = await getAuthenticatedUser();
 
@@ -208,6 +210,73 @@ describe("POST /profiles with an uploaded picture (Cloudinary mocked)", () => {
       where: { publicId: res.body.picture.publicId },
       include: { media: true },
     });
-    expect(asset?.media?.cloudinaryId).toBe("fake_public_id");
+    expect(asset?.media?.cloudinaryId).toBe("fake_public_id_0");
+  });
+});
+
+describe("GET /profiles/posts (my posts)", () => {
+  it("rejects unauthenticated requests", async () => {
+    const res = await request(app).get("/profiles/posts");
+    expect(res.status).toBe(401);
+  });
+
+  it("lists all of my own posts, including private ones", async () => {
+    const { accessToken } = await getUserWithProfile();
+    const post = await createPostAsUser(accessToken, { description: "A post" });
+
+    await prisma.post.update({
+      where: { publicId: post.publicId },
+      data: { private: true },
+    });
+
+    const res = await request(app)
+      .get("/profiles/posts")
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.some((p: any) => p.publicId === post.publicId)).toBe(true);
+  });
+});
+
+describe("GET /profiles/:profileId/posts (public posts)", () => {
+  it("lists another profile's public posts, excluding private ones", async () => {
+    const author = await getUserWithProfile();
+    const viewer = await getUserWithProfile({
+      firstName: "Viewer",
+      lastName: "Person",
+    });
+
+    const publicPost = await createPostAsUser(author.accessToken, {
+      description: "Public",
+    });
+    const privatePost = await createPostAsUser(author.accessToken, {
+      description: "Private",
+    });
+    await prisma.post.update({
+      where: { publicId: privatePost.publicId },
+      data: { private: true },
+    });
+
+    const res = await request(app)
+      .get(`/profiles/${author.profile.publicId}/posts`)
+      .set("Authorization", `Bearer ${viewer.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.some((p: any) => p.publicId === publicPost.publicId)).toBe(
+      true,
+    );
+    expect(res.body.some((p: any) => p.publicId === privatePost.publicId)).toBe(
+      false,
+    );
+  });
+
+  it("returns 404 for a nonexistent profile", async () => {
+    const { accessToken } = await getUserWithProfile();
+
+    const res = await request(app)
+      .get("/profiles/018f4a4a-0000-7000-8000-000000000000/posts")
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(404);
   });
 });

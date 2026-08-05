@@ -1,13 +1,13 @@
-import { prisma } from "../src/config/prisma";
+import { prisma } from "../../src/config/prisma";
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
-import { app } from "../src/config/server";
-import { resetDb } from "./helpers/resetDb";
+import { app } from "../../src/config/server";
+import { resetDb } from "../helpers/resetDb";
 import {
   registerUser,
   validRegisterPayload,
   getAuthenticatedUser,
-} from "./helpers/auth";
+} from "../helpers/auth";
 
 beforeEach(async () => {
   await resetDb();

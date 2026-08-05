@@ -3,7 +3,6 @@ import {
   createNewPost,
   deletePost,
   editPostInfo,
-  getMyPosts,
   getPublicPost,
 } from "./posts.controller";
 import likesRouter from "./likes/likes.routes";
@@ -14,7 +13,6 @@ import { removeRepost, shareRepost } from "./reposts/reposts.controller";
 const router = Router();
 
 router.post("/", upload.array("slide"), createNewPost);
-router.get("/", getMyPosts);
 router.get("/:postId", getPublicPost);
 router.patch("/:postId", editPostInfo);
 router.delete("/:postId", deletePost);

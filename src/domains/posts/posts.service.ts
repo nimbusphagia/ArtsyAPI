@@ -21,7 +21,7 @@ import {
 } from "./posts.validators";
 
 // List public posts
-export async function listPostsByProfile(
+export async function getPostsByProfile(
   profilePublicId: string,
   currentUserId: string,
 ): Promise<PostLazyRes[]> {
@@ -110,7 +110,7 @@ export async function editPost(data: PostEditReq, currentUserId: string) {
   if (!description?.trim() && isPrivate === undefined)
     throw new ValidationError("Empty body.");
   const post = await prisma.post.update({
-    where: { publicId: postPublicId },
+    where: { publicId: postPublicId, authorId: currentUser.profile!.id },
     data: {
       ...(description?.trim() && { description: description.trim() }),
       ...(isPrivate !== undefined && { private: isPrivate }),
@@ -125,7 +125,7 @@ export async function editPost(data: PostEditReq, currentUserId: string) {
 }
 
 // List private posts
-export async function listMyPosts(
+export async function getMyPosts(
   currentUserId: string,
 ): Promise<PostLazyRes[]> {
   const currentUser = await prisma.user.findFirst({
@@ -142,7 +142,7 @@ export async function listMyPosts(
   });
   if (!targetProfile) throw new NotFoundError("Profile not found.");
   const posts = await prisma.post.findMany({
-    where: { authorId: targetProfile.id, private: false },
+    where: { authorId: targetProfile.id },
     select: { ...PostLazySelect, author: { select: ProfileLazySelect } },
   });
   const parsedPosts = PostLazyResponseSchema.array().parse(

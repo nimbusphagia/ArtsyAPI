@@ -7,7 +7,7 @@ import {
   updateMyProfile,
 } from "./profiles.controller";
 import upload from "../../middleware/uploadFile";
-import { getPublicPosts } from "../posts/posts.controller";
+import { listPublicPosts, listMyPosts } from "../posts/posts.controller";
 import { listMyReposts } from "../posts/reposts/reposts.controller";
 import {
   listCollectionsByProfile,
@@ -19,10 +19,13 @@ const router = Router();
 // List profiles
 router.get("/", getProfiles);
 
-// List reposts by profile
+// List current user's posts
+router.get("/posts", listMyPosts);
+
+// List current user's reposts
 router.get("/reposts", listMyReposts);
 
-// List collections by profile
+// List current user's collections
 router.get("/collections", listMyCollections);
 
 // Create profile for the first time
@@ -52,7 +55,7 @@ router.patch(
 router.get("/:profileId", getProfile);
 
 // List posts by profile
-router.get("/:profileId/posts", getPublicPosts);
+router.get("/:profileId/posts", listPublicPosts);
 
 // List collections by profile
 router.get("/:profileId/collections", listCollectionsByProfile);
