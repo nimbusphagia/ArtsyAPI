@@ -5,44 +5,21 @@ import { prisma } from "../../src/config/prisma";
 import { resetDb } from "../helpers/resetDb";
 import { getUserWithProfile } from "../helpers/profile";
 import { createPostAsUser } from "../helpers/posts";
+import { makeUploadStreamImpl } from "../helpers/mockCloudinary";
 
-const { uploadStreamMock } = vi.hoisted(() => ({
-  uploadStreamMock: vi.fn(),
-}));
+const { uploadStreamMock } = vi.hoisted(() => ({ uploadStreamMock: vi.fn() }));
 
 vi.mock("../../src/config/cloudinary", () => ({
   default: {
-    uploader: {
-      upload_stream: uploadStreamMock,
-      upload_large_stream: vi.fn(),
-    },
+    uploader: { upload_stream: uploadStreamMock, upload_large_stream: vi.fn() },
     url: vi.fn(() => "https://example.com/thumb.jpg"),
   },
 }));
 
-let uploadCallCount = 0;
-
 beforeEach(async () => {
   await resetDb();
-  uploadCallCount = 0;
   uploadStreamMock.mockReset();
-  uploadStreamMock.mockImplementation((_options: any, callback: any) => {
-    const callIndex = uploadCallCount++;
-    return {
-      end: () => {
-        callback(undefined, {
-          public_id: `fake_public_id_${callIndex}`,
-          asset_id: `fake_asset_id_${callIndex}`,
-          resource_type: "image",
-          format: "jpg",
-          secure_url: `https://example.com/fake_${callIndex}.jpg`,
-          width: 500,
-          height: 500,
-          bytes: 12345,
-        });
-      },
-    };
-  });
+  uploadStreamMock.mockImplementation(makeUploadStreamImpl());
 });
 
 describe("POST /posts", () => {
