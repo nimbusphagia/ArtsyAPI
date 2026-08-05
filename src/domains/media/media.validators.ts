@@ -6,7 +6,7 @@ import {
   isImageMimetype,
   VIDEO_MAX_BYTES,
   VIDEO_MIMETYPES,
-} from "./meda.constants";
+} from "./media.constants";
 
 // Response
 export const MediaResponseSchema = z.object({

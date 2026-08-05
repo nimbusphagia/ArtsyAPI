@@ -37,9 +37,36 @@ export const PostLazyResponseSchema = PostBasicSchema.extend({
 export type PostLazyRes = z.infer<typeof PostLazyResponseSchema>;
 
 // Post Create
+const PositionedFileSchema = z
+  .array(MulterFileSchema)
+  .nonempty()
+  .transform((files, ctx) => {
+    return files.map((file) => {
+      const match = file.fieldname.match(/^slide-(\d+)$/);
+      if (!match) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Unexpected field name: ${file.fieldname}`,
+        });
+        return z.NEVER;
+      }
+      return { file, position: Number(match[1]) };
+    });
+  })
+  .refine(
+    (posts) => {
+      const positions = posts.map((p) => p.position).sort((a, b) => a - b);
+      return positions.every((pos, i) => pos === i + 1);
+    },
+    {
+      message:
+        "Positions must be sequential starting at 1 with no duplicates or gaps",
+    },
+  );
+
 export const PostCreateRequestSchema = z.object({
   description: z.string().optional(),
-  files: MulterFileSchema.array().nonempty(),
+  files: PositionedFileSchema,
 });
 export type PostCreateReq = z.infer<typeof PostCreateRequestSchema>;
 

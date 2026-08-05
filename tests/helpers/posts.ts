@@ -8,7 +8,7 @@ export async function createPostAsUser(
   const req = request(app)
     .post("/posts")
     .set("Authorization", `Bearer ${accessToken}`)
-    .attach("slide", Buffer.from("fake-image-data"), {
+    .attach("slide-1", Buffer.from("fake-image-data"), {
       filename: "slide1.jpg",
       contentType: "image/jpeg",
     });

@@ -5,13 +5,22 @@ import { prisma } from "../../src/config/prisma";
 import { resetDb } from "../helpers/resetDb";
 import { getUserWithProfile } from "../helpers/profile";
 import { createPostAsUser } from "../helpers/posts";
-import { makeUploadStreamImpl } from "../helpers/mockCloudinary";
+import {
+  makeUploadLargeStreamImpl,
+  makeUploadStreamImpl,
+} from "../helpers/mockCloudinary";
 
-const { uploadStreamMock } = vi.hoisted(() => ({ uploadStreamMock: vi.fn() }));
+const { uploadStreamMock, uploadLargeStreamMock } = vi.hoisted(() => ({
+  uploadStreamMock: vi.fn(),
+  uploadLargeStreamMock: vi.fn(),
+}));
 
 vi.mock("../../src/config/cloudinary", () => ({
   default: {
-    uploader: { upload_stream: uploadStreamMock, upload_large_stream: vi.fn() },
+    uploader: {
+      upload_stream: uploadStreamMock,
+      upload_large_stream: uploadLargeStreamMock,
+    },
     url: vi.fn(() => "https://example.com/thumb.jpg"),
   },
 }));
@@ -20,6 +29,8 @@ beforeEach(async () => {
   await resetDb();
   uploadStreamMock.mockReset();
   uploadStreamMock.mockImplementation(makeUploadStreamImpl());
+  uploadLargeStreamMock.mockReset();
+  uploadLargeStreamMock.mockImplementation(makeUploadLargeStreamImpl());
 });
 
 describe("POST /posts", () => {
@@ -46,7 +57,7 @@ describe("POST /posts", () => {
       .post("/posts")
       .set("Authorization", `Bearer ${accessToken}`)
       .field("description", "My first post")
-      .attach("slide", Buffer.from("fake-image-data"), {
+      .attach("slide-1", Buffer.from("fake-image-data"), {
         filename: "slide1.jpg",
         contentType: "image/jpeg",
       });
@@ -63,15 +74,15 @@ describe("POST /posts", () => {
     const res = await request(app)
       .post("/posts")
       .set("Authorization", `Bearer ${accessToken}`)
-      .attach("slide", Buffer.from("img-1"), {
+      .attach("slide-1", Buffer.from("img-1"), {
         filename: "a.jpg",
         contentType: "image/jpeg",
       })
-      .attach("slide", Buffer.from("img-2"), {
+      .attach("slide-2", Buffer.from("img-2"), {
         filename: "b.jpg",
         contentType: "image/jpeg",
       })
-      .attach("slide", Buffer.from("img-3"), {
+      .attach("slide-3", Buffer.from("img-3"), {
         filename: "c.jpg",
         contentType: "image/jpeg",
       });
@@ -79,6 +90,9 @@ describe("POST /posts", () => {
     expect(res.status).toBe(201);
     expect(res.body.slides).toHaveLength(3);
     expect(uploadStreamMock).toHaveBeenCalledTimes(3);
+
+    const positions = res.body.slides.map((s: any) => s.position).sort();
+    expect(positions).toEqual([1, 2, 3]);
   });
 });
 
@@ -163,9 +177,6 @@ describe("PATCH /posts/:postId", () => {
     expect(res.status).toBe(400);
   });
 
-  // Regression test for the missing-ownership-check bug in editPost.
-  // Currently FAILS against existing code — fix editPost's `where` clause
-  // to include `authorId: currentUser.profile!.id` to make this pass.
   it("rejects editing a post that belongs to someone else", async () => {
     const owner = await getUserWithProfile();
     const attacker = await getUserWithProfile({
@@ -223,5 +234,119 @@ describe("DELETE /posts/:postId", () => {
       where: { publicId: post.publicId },
     });
     expect(stillThere).not.toBeNull();
+  });
+});
+
+describe("POST /posts with mixed image and video slides", () => {
+  it("creates a post with both image and video slides, preserving order and resourceType", async () => {
+    const { accessToken } = await getUserWithProfile();
+
+    const res = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .attach("slide-1", Buffer.from("img-data"), {
+        filename: "a.jpg",
+        contentType: "image/jpeg",
+      })
+      .attach("slide-2", Buffer.from("vid-data"), {
+        filename: "b.mp4",
+        contentType: "video/mp4",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.slides).toHaveLength(2);
+    expect(uploadStreamMock).toHaveBeenCalledOnce();
+    expect(uploadLargeStreamMock).toHaveBeenCalledOnce();
+
+    const byPosition = [...res.body.slides].sort(
+      (a: any, b: any) => a.position - b.position,
+    );
+    expect(byPosition[0].media.resourceType).toBe("image");
+    expect(byPosition[1].media.resourceType).toBe("video");
+    expect(byPosition[1].media.thumbnail).toContain("fake_thumb");
+  });
+
+  it("stores video duration correctly (verified via GET, which returns full media detail)", async () => {
+    const { accessToken } = await getUserWithProfile();
+
+    const createRes = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .attach("slide-1", Buffer.from("vid-data"), {
+        filename: "b.mp4",
+        contentType: "video/mp4",
+      });
+
+    const getRes = await request(app)
+      .get(`/posts/${createRes.body.publicId}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.slides[0].media.duration).toBe(12.5);
+  });
+});
+describe("POST /posts — slide position validation", () => {
+  it("rejects a fieldname that doesn't match the slide-N pattern", async () => {
+    const { accessToken } = await getUserWithProfile();
+
+    const res = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .attach("banner", Buffer.from("img-1"), {
+        filename: "a.jpg",
+        contentType: "image/jpeg",
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects positions with a gap (1, 3 — missing 2)", async () => {
+    const { accessToken } = await getUserWithProfile();
+
+    const res = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .attach("slide-1", Buffer.from("img-1"), {
+        filename: "a.jpg",
+        contentType: "image/jpeg",
+      })
+      .attach("slide-3", Buffer.from("img-2"), {
+        filename: "b.jpg",
+        contentType: "image/jpeg",
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects duplicate positions (1, 1)", async () => {
+    const { accessToken } = await getUserWithProfile();
+
+    const res = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .attach("slide-1", Buffer.from("img-1"), {
+        filename: "a.jpg",
+        contentType: "image/jpeg",
+      })
+      .attach("slide-1", Buffer.from("img-2"), {
+        filename: "b.jpg",
+        contentType: "image/jpeg",
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects positions starting at 0 instead of 1", async () => {
+    const { accessToken } = await getUserWithProfile();
+
+    const res = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .attach("slide-0", Buffer.from("img-1"), {
+        filename: "a.jpg",
+        contentType: "image/jpeg",
+      });
+
+    expect(res.status).toBe(400);
   });
 });

@@ -3,7 +3,7 @@ import { UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
 import { ProfileImageFile } from "./media.validators";
 import { AssetType, AssetTypeSchema } from "./assets/assets.validators";
 import { prisma } from "../../config/prisma";
-import { isVideoMimetype } from "./meda.constants";
+import { isVideoMimetype } from "./media.constants";
 
 const THUMBNAIL_TRANSFORM = {
   width: 200,

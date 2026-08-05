@@ -3,7 +3,7 @@ import {
   IMAGE_MIMETYPES,
   VIDEO_MAX_BYTES,
   VIDEO_MIMETYPES,
-} from "../domains/media/meda.constants";
+} from "../domains/media/media.constants";
 
 const upload = multer({
   storage: multer.memoryStorage(),

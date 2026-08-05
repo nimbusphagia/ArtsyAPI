@@ -67,12 +67,15 @@ export async function createPost(data: PostCreateReq, currentUserId: string) {
     select: { profile: { select: { id: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
-
   const { description, files } = data;
+
   const uploadedMedia = await Promise.all(
-    files.map(async (m) =>
-      toMediaData(await uploadMedia(m.buffer, m.mimetype, "artsy")),
-    ),
+    files.map(async (m) => ({
+      position: m.position,
+      media: toMediaData(
+        await uploadMedia(m.file.buffer, m.file.mimetype, "artsy"),
+      ),
+    })),
   );
 
   const post = await prisma.post.create({
@@ -80,8 +83,8 @@ export async function createPost(data: PostCreateReq, currentUserId: string) {
       authorId: currentUser.profile!.id,
       ...(description && { description }),
       slides: {
-        create: uploadedMedia.map((media, index) => ({
-          position: index,
+        create: uploadedMedia.map(({ position, media }) => ({
+          position,
           media: {
             create: media,
           },

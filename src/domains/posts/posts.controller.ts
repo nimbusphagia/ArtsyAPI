@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../config/errors/errors";
 import {
   createPost,
   deletePostById,
@@ -68,10 +72,12 @@ export async function createNewPost(
   try {
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
+
     const data = PostCreateRequestSchema.parse({
-      ...req.body,
+      description: req.body.description,
       files: req.files,
     });
+
     const post = await createPost(data, currentUserId);
     res.status(201).json(post);
   } catch (error) {

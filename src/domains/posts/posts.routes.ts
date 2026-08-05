@@ -12,7 +12,7 @@ import { removeRepost, shareRepost } from "./reposts/reposts.controller";
 
 const router = Router();
 
-router.post("/", upload.array("slide"), createNewPost);
+router.post("/", upload.any(), createNewPost);
 router.get("/:postId", getPublicPost);
 router.patch("/:postId", editPostInfo);
 router.delete("/:postId", deletePost);
