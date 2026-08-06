@@ -21,7 +21,13 @@ export async function getRepostsByUser(
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
   const rawReposts = await prisma.repost.findMany({
-    where: { reposterId: currentUser.profile!.id },
+    where: {
+      reposterId: currentUser.profile!.id,
+      post: {
+        author: ProfileIsNotBlocked(currentUser.profile!.id),
+        private: false,
+      },
+    },
     select: {
       publicId: true,
       post: {

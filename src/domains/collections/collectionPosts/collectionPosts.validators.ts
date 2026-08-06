@@ -28,11 +28,19 @@ export const ColPostExtraLazySchema = z.object({
 
 export type ColPostExtraLazy = z.infer<typeof ColPostExtraLazySchema>;
 
-export const ColPostReqSchema = z.object({
+// Add
+export const ColPostAddReqSchema = z.object({
   postId: z.uuidv7(),
   collectionId: z.uuidv7(),
 });
-export type ColPostReq = z.infer<typeof ColPostReqSchema>;
+export type ColPostAddReq = z.infer<typeof ColPostAddReqSchema>;
+
+// Remove
+export const ColPostRemoveReqSchema = z.object({
+  collectionPostId: z.uuidv7(),
+  collectionId: z.uuidv7(),
+});
+export type ColPostRemoveReq = z.infer<typeof ColPostRemoveReqSchema>;
 
 //Prisma
 export const ColPostSelect = {

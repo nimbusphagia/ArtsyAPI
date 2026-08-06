@@ -15,7 +15,10 @@ import {
   updateCollectionPosts,
 } from "./collections.service";
 import { publicIdSchema } from "../../config/utils/validationUtils";
-import { ColPostReqSchema } from "./collectionPosts/collectionPosts.validators";
+import {
+  ColPostAddReqSchema,
+  ColPostRemoveReqSchema,
+} from "./collectionPosts/collectionPosts.validators";
 import {
   createCollectionPost,
   deleteCollectionPost,
@@ -153,7 +156,7 @@ export async function addPostToCollection(
   try {
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
-    const data = ColPostReqSchema.parse({
+    const data = ColPostAddReqSchema.parse({
       ...req.body,
       collectionId: req.params.collectionId,
     });
@@ -171,7 +174,7 @@ export async function removePostFromCollection(
   try {
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
-    const data = ColPostReqSchema.parse({
+    const data = ColPostRemoveReqSchema.parse({
       ...req.body,
       collectionId: req.params.collectionId,
     });

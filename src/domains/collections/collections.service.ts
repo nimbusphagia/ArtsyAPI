@@ -171,6 +171,7 @@ export async function editCollectionInfo(
   const collection = await prisma.collection.update({
     where: {
       publicId,
+      ownerId: currentUser.profile!.id,
     },
     data: {
       ...(name && { name }),

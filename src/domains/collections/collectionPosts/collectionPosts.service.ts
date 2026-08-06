@@ -5,15 +5,16 @@ import {
 import { prisma } from "../../../config/prisma";
 import { ProfileIsNotBlocked } from "../../profiles/profiles.validators";
 import {
+  ColPostAddReq,
+  ColPostRemoveReq,
   ColPostExtraLazy,
   ColPostExtraLazySchema,
   ColPostExtraLazySelect,
-  ColPostReq,
 } from "./collectionPosts.validators";
 
 // Create
 export async function createCollectionPost(
-  { postId, collectionId }: ColPostReq,
+  { postId, collectionId }: ColPostAddReq,
   currentUserId: string,
 ): Promise<ColPostExtraLazy> {
   const currentUser = await prisma.user.findFirst({
@@ -67,7 +68,7 @@ export async function createCollectionPost(
 }
 // Delete
 export async function deleteCollectionPost(
-  { collectionId, postId }: ColPostReq,
+  { collectionId, collectionPostId }: ColPostRemoveReq,
   currentUserId: string,
 ): Promise<void> {
   const currentUser = await prisma.user.findFirst({
@@ -78,7 +79,7 @@ export async function deleteCollectionPost(
 
   const collectionPost = await prisma.collectionPost.findFirst({
     where: {
-      publicId: postId,
+      publicId: collectionPostId,
       collection: {
         publicId: collectionId,
         ownerId: currentUser.profile!.id,
