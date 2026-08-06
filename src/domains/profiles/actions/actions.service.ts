@@ -10,15 +10,15 @@ export async function followProfileById(
   profileId: string,
   currentUserId: string,
 ) {
-  if (profileId === currentUserId) {
-    throw new UnauthorizedError("Cannot follow yourself");
-  }
   const currentUser = await prisma.user.findFirst({
     where: { publicId: currentUserId, active: true, profile: { isNot: null } },
-    select: { profile: { select: { id: true } } },
+    select: { profile: { select: { id: true, publicId: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
+  if (profileId === currentUser.profile!.publicId) {
+    throw new UnauthorizedError("Cannot follow yourself");
+  }
   const currentProfileId = currentUser.profile!.id;
 
   const targetProfile = await prisma.profile.findUnique({
@@ -153,35 +153,45 @@ export async function blockProfileById(
   profileId: string,
   currentUserId: string,
 ) {
-  if (profileId === currentUserId) {
-    throw new UnauthorizedError("Cannot block yourself");
-  }
   const currentUser = await prisma.user.findFirst({
     where: { publicId: currentUserId, active: true, profile: { isNot: null } },
-    select: { profile: { select: { id: true } } },
+    select: { profile: { select: { id: true, publicId: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
   const currentProfileId = currentUser.profile!.id;
 
+  if (profileId === currentUser.profile!.publicId) {
+    throw new UnauthorizedError("Cannot block yourself");
+  }
+
   const targetProfile = await prisma.profile.findUnique({
     where: {
       publicId: profileId,
       blockedBy: { none: { blockerId: currentProfileId } },
-      user: {
-        active: true,
-      },
+      user: { active: true },
     },
     select: { id: true },
   });
 
   if (!targetProfile) throw new NotFoundError("Profile not found");
-  await prisma.block.create({
-    data: {
-      blockerId: currentProfileId,
-      blockedId: targetProfile.id,
-    },
-  });
+
+  await prisma.$transaction([
+    prisma.block.create({
+      data: {
+        blockerId: currentProfileId,
+        blockedId: targetProfile.id,
+      },
+    }),
+    prisma.follow.deleteMany({
+      where: {
+        OR: [
+          { followerId: currentProfileId, followingId: targetProfile.id },
+          { followerId: targetProfile.id, followingId: currentProfileId },
+        ],
+      },
+    }),
+  ]);
 }
 
 // Unblock

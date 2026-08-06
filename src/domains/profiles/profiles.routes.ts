@@ -1,4 +1,5 @@
 import { Router } from "express";
+import actionsRouter from "./actions/actions.routes";
 import {
   initiateProfile,
   getProfiles,
@@ -13,11 +14,15 @@ import {
   listCollectionsByProfile,
   listMyCollections,
 } from "../collections/collections.controller";
+import { listBlockedProfiles } from "./actions/actions.controller";
 
 const router = Router();
 
 // List profiles
 router.get("/", getProfiles);
+
+// List current user's blocked
+router.get("/blocked", listBlockedProfiles);
 
 // List current user's posts
 router.get("/posts", listMyPosts);
@@ -59,5 +64,8 @@ router.get("/:profileId/posts", listPublicPosts);
 
 // List collections by profile
 router.get("/:profileId/collections", listCollectionsByProfile);
+
+// Follow & Block
+router.use("/:profileId", actionsRouter);
 
 export default router;
