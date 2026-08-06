@@ -25,6 +25,7 @@ export async function createComment(
     where: {
       publicId: data.postId,
       author: ProfileIsNotBlocked(currentUser.profile!.id),
+      private: false,
     },
     select: { id: true },
   });
