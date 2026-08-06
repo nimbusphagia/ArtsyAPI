@@ -277,6 +277,7 @@ enum MessageType {
   COLLECTION
   EVENT
 }
+
 // Notifications
 model Notification {
   id          Int              @id @default(autoincrement())

@@ -1,9 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import {
-  NotFoundError,
-  UnauthorizedError,
-  ValidationError,
-} from "../../config/errors/errors";
+import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
 import {
   createPost,
   deletePostById,
