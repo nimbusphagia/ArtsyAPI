@@ -5,6 +5,7 @@ import {
 } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
 import { toMediaData, uploadMedia } from "../media/media.service";
+import { createFollowerNotifications } from "../notifications/notifications.service";
 import {
   ProfileIsNotBlocked,
   ProfileLazySelect,
@@ -64,9 +65,15 @@ export async function getPostsByProfile(
 export async function createPost(data: PostCreateReq, currentUserId: string) {
   const currentUser = await prisma.user.findFirst({
     where: { publicId: currentUserId, active: true, profile: { isNot: null } },
-    select: { profile: { select: { id: true } } },
+    select: {
+      profile: {
+        select: { id: true, followers: { select: { followerId: true } } },
+      },
+    },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const currentProfileId = currentUser.profile!.id;
+
   const { description, files } = data;
 
   const uploadedMedia = await Promise.all(
@@ -80,7 +87,7 @@ export async function createPost(data: PostCreateReq, currentUserId: string) {
 
   const post = await prisma.post.create({
     data: {
-      authorId: currentUser.profile!.id,
+      authorId: currentProfileId,
       ...(description && { description }),
       slides: {
         create: uploadedMedia.map(({ position, media }) => ({
@@ -91,7 +98,17 @@ export async function createPost(data: PostCreateReq, currentUserId: string) {
         })),
       },
     },
-    select: { ...PostLazySelect, author: { select: ProfileLazySelect } },
+    select: {
+      ...PostLazySelect,
+      author: { select: ProfileLazySelect },
+      id: true,
+    },
+  });
+  await createFollowerNotifications({
+    recipientIds: currentUser.profile!.followers.map((f) => f.followerId),
+    actorId: currentProfileId,
+    type: "NEW_POST",
+    postId: post.id,
   });
 
   return PostLazyResponseSchema.parse({

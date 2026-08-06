@@ -3,6 +3,7 @@ import {
   UnauthorizedError,
 } from "../../../config/errors/errors";
 import { prisma } from "../../../config/prisma";
+import { createNotification } from "../../notifications/notifications.service";
 import { ProfileIsNotBlocked } from "../../profiles/profiles.validators";
 import {
   CommentLazySelect,
@@ -21,27 +22,36 @@ export async function createComment(
     select: { profile: { select: { id: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const currentProfileId = currentUser.profile!.id;
+
   const post = await prisma.post.findUnique({
     where: {
       publicId: data.postId,
-      author: ProfileIsNotBlocked(currentUser.profile!.id),
+      author: ProfileIsNotBlocked(currentProfileId),
       private: false,
     },
-    select: { id: true },
+    select: { id: true, authorId: true },
   });
   if (!post) throw new NotFoundError("Post not found.");
 
   const rawComment = await prisma.comment.create({
     data: {
       postId: post.id,
-      authorId: currentUser.profile!.id,
+      authorId: currentProfileId,
       text: data.text,
     },
-    select: CommentLazySelect,
+    select: { ...CommentLazySelect, id: true },
   });
   const parsedComment = CommentResponseSchema.parse({
     ...rawComment,
     likes: rawComment!._count.likes,
+  });
+
+  await createNotification({
+    recipientId: post.authorId,
+    actorId: currentProfileId,
+    type: "COMMENT",
+    commentId: rawComment.id,
   });
 
   return parsedComment;
@@ -105,10 +115,12 @@ export async function likeCommentById(
     select: { profile: { select: { id: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
-  await prisma.comment.update({
+  const currentProfileId = currentUser.profile!.id;
+
+  const comment = await prisma.comment.update({
     where: {
       publicId: commentId,
-      author: ProfileIsNotBlocked(currentUser.profile!.id),
+      author: ProfileIsNotBlocked(currentProfileId),
     },
     data: {
       likes: {
@@ -117,6 +129,17 @@ export async function likeCommentById(
         },
       },
     },
+    select: {
+      authorId: true,
+      id: true,
+    },
+  });
+
+  await createNotification({
+    recipientId: comment.authorId,
+    actorId: currentProfileId,
+    type: "LIKE_COMMENT",
+    commentId: comment.id,
   });
 }
 

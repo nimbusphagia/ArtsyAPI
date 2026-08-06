@@ -14,16 +14,21 @@ import type {
 export async function createNotification(
   input: NotificationCreateInput,
 ): Promise<void> {
-  await prisma.notification.create({
-    data: {
-      recipientId: input.recipientId,
-      actorId: input.actorId,
-      type: input.type,
-      postId: input.postId ?? null,
-      commentId: input.commentId ?? null,
-      collectionId: input.collectionId ?? null,
-    },
-  });
+  if (input.recipientId === input.actorId) return;
+  try {
+    await prisma.notification.create({
+      data: {
+        recipientId: input.recipientId,
+        actorId: input.actorId,
+        type: input.type,
+        postId: input.postId ?? null,
+        commentId: input.commentId ?? null,
+        collectionId: input.collectionId ?? null,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 const FANOUT_CHUNK_SIZE = 1000;
@@ -41,7 +46,14 @@ export async function createFollowerNotifications(
 
   for (let i = 0; i < rows.length; i += FANOUT_CHUNK_SIZE) {
     const chunk = rows.slice(i, i + FANOUT_CHUNK_SIZE);
-    await prisma.notification.createMany({ data: chunk });
+    try {
+      await prisma.notification.createMany({ data: chunk });
+    } catch (error) {
+      console.error(
+        `Failed to create ${input.type} fan-out notifications for chunk ${i}-${i + chunk.length}:`,
+        error,
+      );
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 import z from "zod";
 import * as ProfileValidators from "../profiles/profiles.validators";
 
-export const NotificationTypeSchema = z.enum([
+export const notificationTypes = [
   "LIKE_POST",
   "LIKE_COMMENT",
   "LIKE_COLLECTION",
@@ -10,7 +10,8 @@ export const NotificationTypeSchema = z.enum([
   "NEW_POST",
   "NEW_COLLECTION",
   "FOLLOW",
-]);
+] as const;
+export const NotificationTypeSchema = z.enum(notificationTypes);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
 
 // Response

@@ -3,6 +3,7 @@ import {
   UnauthorizedError,
 } from "../../../config/errors/errors";
 import { prisma } from "../../../config/prisma";
+import { createNotification } from "../../notifications/notifications.service";
 import {
   ProfileIsNotBlocked,
   ProfileLazySelect,
@@ -52,19 +53,20 @@ export async function createRepost(postId: string, currentUserId: string) {
     select: { profile: { select: { id: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const currentProfileId = currentUser.profile!.id;
 
   const post = await prisma.post.findUnique({
     where: {
       publicId: postId,
       private: false,
-      author: ProfileIsNotBlocked(currentUser.profile!.id),
+      author: ProfileIsNotBlocked(currentProfileId),
     },
-    select: { id: true },
+    select: { id: true, authorId: true },
   });
   if (!post) throw new NotFoundError("Post not found");
 
   const rawRepost = await prisma.repost.create({
-    data: { reposterId: currentUser.profile!.id, postId: post.id },
+    data: { reposterId: currentProfileId, postId: post.id },
     select: {
       publicId: true,
       post: {
@@ -72,6 +74,14 @@ export async function createRepost(postId: string, currentUserId: string) {
       },
     },
   });
+
+  await createNotification({
+    recipientId: post.authorId,
+    actorId: currentProfileId,
+    type: "REPOST",
+    postId: post.id,
+  });
+
   return RepostLazyResponseSchema.parse({
     ...rawRepost,
     post: {

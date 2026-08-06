@@ -3,6 +3,8 @@ import {
   UnauthorizedError,
 } from "../../../config/errors/errors";
 import { prisma } from "../../../config/prisma";
+import { createNotification } from "../../notifications/notifications.service";
+import { notificationTypes } from "../../notifications/notifications.validators";
 import { ProfileLazyRes, ProfileLazySelect } from "../profiles.validators";
 
 // Follow
@@ -39,6 +41,12 @@ export async function followProfileById(
       followerId: currentProfileId,
       followingId: targetProfile.id,
     },
+  });
+
+  await createNotification({
+    recipientId: targetProfile.id,
+    actorId: currentProfileId,
+    type: "FOLLOW",
   });
 }
 

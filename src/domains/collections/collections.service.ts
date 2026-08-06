@@ -4,6 +4,7 @@ import {
   ValidationError,
 } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
+import { createFollowerNotifications } from "../notifications/notifications.service";
 import { ProfileIsNotBlocked } from "../profiles/profiles.validators";
 import {
   CollectionCreateReq,
@@ -58,16 +59,21 @@ export async function createCollection(
 ): Promise<CollectionRes> {
   const currentUser = await prisma.user.findFirst({
     where: { publicId: currentUserId, active: true, profile: { isNot: null } },
-    select: { profile: { select: { id: true } } },
+    select: {
+      profile: {
+        select: { id: true, followers: { select: { followerId: true } } },
+      },
+    },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const currentProfileId = currentUser.profile!.id;
 
   const { name, description, posts, isPrivate } = data;
 
   const foundPosts = await prisma.post.findMany({
     where: {
       private: false,
-      author: ProfileIsNotBlocked(currentUser.profile!.id),
+      author: ProfileIsNotBlocked(currentProfileId),
       publicId: {
         in: posts.map((p) => p.publicId),
       },
@@ -93,14 +99,20 @@ export async function createCollection(
       name,
       ...(description?.trim() && { description }),
       ...(isPrivate !== undefined && { private: isPrivate }),
-      ownerId: currentUser.profile!.id,
+      ownerId: currentProfileId,
       posts: {
         createMany: {
           data: collectionPostsData,
         },
       },
     },
-    select: CollectionSelect,
+    select: { ...CollectionSelect, id: true },
+  });
+  await createFollowerNotifications({
+    recipientIds: currentUser.profile!.followers.map((f) => f.followerId),
+    actorId: currentProfileId,
+    type: "NEW_COLLECTION",
+    collectionId: collection.id,
   });
 
   return parseCollectionRes(collection);

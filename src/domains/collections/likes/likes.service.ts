@@ -3,6 +3,7 @@ import {
   UnauthorizedError,
 } from "../../../config/errors/errors";
 import { prisma } from "../../../config/prisma";
+import { createNotification } from "../../notifications/notifications.service";
 import { ProfileIsNotBlocked } from "../../profiles/profiles.validators";
 import {
   LikeLazySelect,
@@ -24,22 +25,29 @@ export async function createCollectionLike(
     select: { profile: { select: { id: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  const currentProfileId = currentUser.profile!.id;
 
   const collection = await prisma.collection.findUnique({
     where: {
       publicId: collectionId,
-      owner: ProfileIsNotBlocked(currentUser.profile!.id),
+      owner: ProfileIsNotBlocked(currentProfileId),
       private: false,
     },
-    select: { id: true },
+    select: { id: true, ownerId: true },
   });
   if (!collection) throw new NotFoundError("Collection not found");
   const like = await prisma.collectionLike.create({
     data: {
       collectionId: collection.id,
-      ownerId: currentUser.profile!.id,
+      ownerId: currentProfileId,
     },
     select: LikeLazySelect,
+  });
+  await createNotification({
+    recipientId: collection.ownerId,
+    actorId: currentProfileId,
+    type: "LIKE_COLLECTION",
+    collectionId: collection.id,
   });
   return parseLikeLazy(like);
 }
