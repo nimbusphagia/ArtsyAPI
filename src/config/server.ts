@@ -30,7 +30,7 @@ app.use("/profiles", requireAuth, profilesRouter);
 app.use("/posts", requireAuth, postsRouter);
 app.use("/collections", requireAuth, collectionsRouter);
 app.use("/chats", requireAuth, chatsRouter);
-app.use("/notifications", notificationsRouter);
+app.use("/notifications", requireAuth, notificationsRouter);
 
 app.use(ErrorHandler);
 
