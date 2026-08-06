@@ -8,7 +8,7 @@ import {
   unfollowProfile,
 } from "./actions.controller";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.post("/follow", followProfile);
 router.delete("/follow", unfollowProfile);

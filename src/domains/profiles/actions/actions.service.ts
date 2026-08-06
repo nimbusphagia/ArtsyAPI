@@ -61,17 +61,21 @@ export async function unfollowProfileById(
       user: {
         active: true,
       },
+      followers: {
+        some: {
+          followerId: currentProfileId,
+        },
+      },
+      blocking: { none: { blockedId: currentProfileId } },
     },
     select: { id: true },
   });
 
   if (!targetProfile) throw new NotFoundError("Profile not found");
-  await prisma.follow.delete({
+  await prisma.follow.deleteMany({
     where: {
-      followerId_followingId: {
-        followerId: currentProfileId,
-        followingId: targetProfile.id,
-      },
+      followerId: currentProfileId,
+      followingId: targetProfile.id,
     },
   });
 }
@@ -168,7 +172,7 @@ export async function blockProfileById(
   const targetProfile = await prisma.profile.findUnique({
     where: {
       publicId: profileId,
-      blockedBy: { none: { blockerId: currentProfileId } },
+      blocking: { none: { blockedId: currentProfileId } },
       user: { active: true },
     },
     select: { id: true },
