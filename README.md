@@ -1,16 +1,17 @@
 # ArtsyAPI
 
-ArtsyAPI is the backend for a social platform built around artists, not around art as disposable content.
+ArtsyAPI is the backend for Artsy, a social platform made for artists to reclaim a space on the internet.
 
-Most platforms optimize for volume: endless feeds, quick scrolling, images stripped of the person who made them. ArtsyAPI is built on the opposite bet. Every post belongs to a profile, and every profile is treated as an artist's space, whether the person behind it thinks of themselves as one yet or not. The goal is to give that space room to breathe, and to give the people who follow it a reason to follow the artist, not just the algorithm.
+Nowadays social platforms cater to quick content: short-form videos, expired-based stories, algorithmic explore feeds designed to grab your attention as quickly as possible. We want to focus on artists as they are, interesting, creative people who have passionate ideas to share with the world.
+Every profile is treated as an artist's space, whether the user thinks of themselves as one or not. The goal is to give people a place where creativity is valued, where they can look up to an artist and eventually be drawn into the silly journey that is making art.
 
-A few ideas that shape how the API is designed:
+API design:
 
-- **Profiles are the unit of identity, not posts.** Following, blocking, and browsing all center on profiles. A post is something an artist made; it isn't a free-floating unit of content divorced from who's behind it.
-- **Collections let people curate, not just hoard.** A collection can hold posts from any artist, not only your own, so someone can build a gallery around a theme, an inspiration, or a specific artist's body of work. Curation is a form of appreciation the platform actively supports.
-- **Depth over reach.** There's no algorithmic feed here to reward whatever spreads fastest. The system is built to support dedicated followers who chose to follow a specific artist, not passive scrolling through a nameless stream.
-- **Blocking is a real boundary, not a filter.** Blocking someone doesn't just hide their content; it unwinds any existing follow relationship between the two profiles, and neither side can act on the other afterward, even in ways unrelated to visibility.
+- **Profiles are the unit of identity, not posts.** Following, blocking, and browsing all center on profiles. Posts and Collections are extensions of the artist's profile.
+- **You can create Collections to make a story out of your personal work or to share a aesthetic you resonate with.** A collection can hold posts from any artist, not only your own, so someone can build a gallery around a theme, an inspiration, or a specific artist's body of work.
+- **Decentralized content.** The explore algorithm focuses on the interests you share with the people you follow. The feed isn't driven by the number of likes, but by *who* liked it.
 
+.
 ## Table of Contents
 
 - [Tech Stack](#tech-stack)
