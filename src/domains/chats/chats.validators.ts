@@ -60,18 +60,24 @@ export const ChatLazySelect = {
 type ChatRaw = Prisma.ChatGetPayload<{ select: typeof ChatSelect }>;
 type ChatLazyRaw = Prisma.ChatGetPayload<{ select: typeof ChatLazySelect }>;
 
-export function parseChat(c: ChatRaw, currentUserId: string) {
+export function parseChat(c: ChatRaw, currentProfileId: string) {
   return ChatResponseSchema.parse({
     ...c,
     messages: c.messages,
-    localMember: c.members.find((m) => m.profile?.publicId === currentUserId),
-    remoteMember: c.members.find((m) => m.profile?.publicId !== currentUserId),
+    localMember: c.members.find(
+      (m) => m.profile?.publicId === currentProfileId,
+    ),
+    remoteMember: c.members.find(
+      (m) => m.profile?.publicId !== currentProfileId,
+    ),
   });
 }
-export function parseChatLazy(c: ChatLazyRaw, currentUserId: string) {
+export function parseChatLazy(c: ChatLazyRaw, currentProfileId: string) {
   return ChatLazyResponseSchema.parse({
     ...c,
     lastMessage: c.messages[0],
-    remoteMember: c.members.find((m) => m.profile?.publicId !== currentUserId),
+    remoteMember: c.members.find(
+      (m) => m.profile?.publicId !== currentProfileId,
+    ),
   });
 }

@@ -37,7 +37,7 @@ export async function replyToMessage(
     if (!currentUserId) throw new UnauthorizedError();
     const data = ReplyRequestSchema.parse({
       ...req.body,
-      chatId: req.params.messageId,
+      chatId: req.params.chatId,
     });
     const reply = await replyToMessageById(data, currentUserId);
     res.status(201).json(reply);
@@ -54,8 +54,8 @@ export async function deleteMessage(
   try {
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
-    const chatId = publicIdSchema.parse(req.params.messageId);
-    await deactivateMessageById(chatId, currentUserId);
+    const messageId = publicIdSchema.parse(req.params.messageId);
+    await deactivateMessageById(messageId, currentUserId);
     res.status(204).end();
   } catch (error) {
     next(error);

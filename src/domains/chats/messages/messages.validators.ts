@@ -3,6 +3,7 @@ import { Prisma } from "../../../generated/prisma/client";
 import * as ProfileValidators from "../../profiles/profiles.validators";
 import * as PostValidators from "../../posts/posts.validators";
 import * as CollectionValidators from "../../collections/collections.validators";
+import { ValidationError } from "../../../config/errors/errors";
 
 // Type
 export const MessageTypeSchema = z.enum([
@@ -19,7 +20,7 @@ export const ClientMessageTypeSchema = z.enum(["TEXT", "POST", "COLLECTION"]);
 export const MessageBasicSchema = z.object({
   publicId: z.uuidv7(),
   owner: z.lazy(() => ProfileValidators.ProfileLazyResponseSchema),
-  text: z.string().optional(),
+  text: z.string().nullable(),
   type: MessageTypeSchema,
   createdAt: z.coerce.date(),
   active: z.boolean(),
@@ -29,10 +30,10 @@ export type MessageLazyRes = z.infer<typeof MessageBasicSchema>;
 
 // With relations
 export const MessageResponseSchema = MessageBasicSchema.extend({
-  replyTo: MessageBasicSchema,
-  post: z.lazy(() => PostValidators.PostLazyResponseSchema.optional()),
+  replyTo: MessageBasicSchema.nullable(),
+  post: z.lazy(() => PostValidators.PostLazyResponseSchema.nullable()),
   collection: z.lazy(() =>
-    CollectionValidators.CollectionLazyResponseSchema.optional(),
+    CollectionValidators.CollectionLazyResponseSchema.nullable(),
   ),
 });
 export type MessageRes = z.infer<typeof MessageResponseSchema>;
@@ -116,11 +117,27 @@ type MessageLazyRaw = Prisma.MessageGetPayload<{
 }>;
 
 export function parseMessage(m: MessageRaw) {
-  return MessageResponseSchema.parse({
+  const post = m.post
+    ? PostValidators.PostLazyResponseSchema.parse({
+        ...m.post,
+        stats: m.post._count,
+      })
+    : null;
+  const collection = m.collection
+    ? CollectionValidators.parseCollectionLazyRes(m.collection)
+    : null;
+
+  const result = MessageResponseSchema.safeParse({
     ...m,
-    post: { ...m.post, stats: m.post?._count },
-    collection: { ...m.collection, likes: m.collection?._count.likes },
+    post,
+    collection,
   });
+
+  if (!result.success) {
+    console.error(z.prettifyError(result.error));
+    throw new ValidationError();
+  }
+  return result.data;
 }
 export function parseMessageLazy(m: MessageLazyRaw) {
   return MessageBasicSchema.parse({

@@ -5,7 +5,7 @@ import {
   replyToMessage,
 } from "./messages.controller";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.post("/", createMessage);
 router.post("/:messageId", replyToMessage);

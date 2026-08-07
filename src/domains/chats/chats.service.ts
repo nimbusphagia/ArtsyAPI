@@ -22,7 +22,7 @@ export async function getChatsByUser(
         isNot: null,
       },
     },
-    select: { profile: { select: { id: true } } },
+    select: { profile: { select: { publicId: true, id: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
   const currentProfileId = currentUser.profile!.id;
@@ -49,7 +49,9 @@ export async function getChatsByUser(
     },
     select: ChatLazySelect,
   });
-  const parsedChats = rawChats.map((c) => parseChatLazy(c, currentUserId));
+  const parsedChats = rawChats.map((c) =>
+    parseChatLazy(c, currentUser.profile!.publicId),
+  );
   return parsedChats;
 }
 // Get chat by id
@@ -65,7 +67,7 @@ export async function getChatById(
         isNot: null,
       },
     },
-    select: { profile: { select: { id: true } } },
+    select: { profile: { select: { id: true, publicId: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
 
@@ -95,7 +97,7 @@ export async function getChatById(
     select: ChatSelect,
   });
   if (!rawChat) throw new NotFoundError("Chat not found");
-  const parsedChat = parseChat(rawChat, currentUserId);
+  const parsedChat = parseChat(rawChat, currentUser.profile!.publicId);
   return parsedChat;
 }
 
@@ -110,9 +112,12 @@ export async function createChatByProfiles(
       active: true,
       profile: { isNot: null },
     },
-    select: { profile: { select: { id: true } } },
+    select: { profile: { select: { id: true, publicId: true } } },
   });
   if (!currentUser) throw new UnauthorizedError("Unauthorized action");
+  if (targetProfileId === currentUser.profile!.publicId) {
+    throw new UnauthorizedError("Cannot start a chat with yourself");
+  }
   const currentProfileId = currentUser.profile!.id;
 
   const targetProfile = await prisma.profile.findFirst({
@@ -146,7 +151,7 @@ export async function createChatByProfiles(
     select: ChatLazySelect,
   });
 
-  return parseChatLazy(rawChat, currentUserId);
+  return parseChatLazy(rawChat, currentUser.profile!.publicId);
 }
 
 // Archive

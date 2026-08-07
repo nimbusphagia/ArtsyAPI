@@ -14,9 +14,9 @@ router.get("/", listChatsByUser);
 router.post("/", createChat);
 router.get("/:chatId", getChat);
 
-router.delete("/:chatId/archive", archiveChat);
-router.post("/:chatId/unarchive", unarchiveChat);
+router.delete("/:chatMemberId/archive", archiveChat);
+router.post("/:chatMemberId/unarchive", unarchiveChat);
 
-router.use("/messages", messagesRouter);
+router.use("/:chatId/messages", messagesRouter);
 
 export default router;

@@ -81,6 +81,9 @@ export type PostEditReq = z.infer<typeof PostEditRequestSchema>;
 // Prisma
 export const PostLazySelect = {
   createdAt: true,
+  get author() {
+    return { select: ProfileValidators.ProfileLazySelect };
+  },
   publicId: true,
   description: true,
   slides: { select: PostSlideSelect },
