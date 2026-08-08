@@ -61,26 +61,42 @@ export async function createNewMessage(
         select: MessageSelect,
       });
       break;
-    case "POST":
-      rawMessage = await prisma.message.create({
-        data: {
-          ...base,
-          type: "POST",
-          post: { connect: { publicId: data.postId } },
+    case "POST": {
+      const post = await prisma.post.findFirst({
+        where: {
+          publicId: data.postId,
+          OR: [{ private: false }, { authorId: currentProfileId }],
+          author: ProfileIsNotBlocked(currentProfileId),
         },
+        select: { id: true },
+      });
+      if (!post) throw new NotFoundError("Post not found");
+      rawMessage = await prisma.message.create({
+        data: { ...base, type: "POST", post: { connect: { id: post.id } } },
         select: MessageSelect,
       });
       break;
-    case "COLLECTION":
+    }
+    case "COLLECTION": {
+      const collection = await prisma.collection.findFirst({
+        where: {
+          publicId: data.collectionId,
+          OR: [{ private: false }, { ownerId: currentProfileId }],
+          owner: ProfileIsNotBlocked(currentProfileId),
+        },
+        select: { id: true },
+      });
+      if (!collection) throw new NotFoundError("Collection not found");
       rawMessage = await prisma.message.create({
         data: {
           ...base,
           type: "COLLECTION",
-          collection: { connect: { publicId: data.collectionId } },
+          collection: { connect: { id: collection.id } },
         },
         select: MessageSelect,
       });
       break;
+    }
     default: {
       const _exhaustive: never = data;
       throw new Error(
@@ -127,11 +143,18 @@ export async function replyToMessageById(
   });
   if (!chatMember) throw new NotFoundError("Chat not found");
 
+  const originalMessage = await prisma.message.findFirst({
+    where: { publicId: data.replyToId, chatId: chatMember.chatId },
+    select: { id: true },
+  });
+  if (!originalMessage)
+    throw new NotFoundError("Message not found in this chat");
+
   const rawReply = await prisma.message.create({
     data: {
-      chat: { connect: { publicId: data.chatId } },
+      chat: { connect: { id: chatMember.chatId } },
       owner: { connect: { id: currentProfileId } },
-      replyTo: { connect: { publicId: data.replyToId } },
+      replyTo: { connect: { id: originalMessage.id } },
       type: "TEXT",
       text: data.text,
     },

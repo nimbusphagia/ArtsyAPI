@@ -177,9 +177,159 @@ describe("POST /chats/:chatId/messages (Create Message)", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("rejects sharing a private post you don't own", async () => {
+    const author = await getUserWithProfile();
+    const sharer = await getUserWithProfile({
+      firstName: "Sharer",
+      lastName: "Person",
+    });
+    const recipient = await getUserWithProfile({
+      firstName: "Recip",
+      lastName: "Ient",
+    });
+
+    const post = await createPostAsUser(author.accessToken);
+    await prisma.post.update({
+      where: { publicId: post.publicId },
+      data: { private: true },
+    });
+
+    const chatRes = await createChatAsUser(
+      sharer.accessToken,
+      recipient.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+
+    const res = await sendMessage(sharer.accessToken, chatId, {
+      type: "POST",
+      postId: post.publicId,
+    });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("allows sharing your own private post", async () => {
+    const author = await getUserWithProfile();
+    const recipient = await getUserWithProfile({
+      firstName: "Recip",
+      lastName: "Ient",
+    });
+
+    const post = await createPostAsUser(author.accessToken);
+    await prisma.post.update({
+      where: { publicId: post.publicId },
+      data: { private: true },
+    });
+
+    const chatRes = await createChatAsUser(
+      author.accessToken,
+      recipient.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+
+    const res = await sendMessage(author.accessToken, chatId, {
+      type: "POST",
+      postId: post.publicId,
+    });
+
+    expect(res.status).toBe(201);
+  });
+
+  it("rejects sharing a private collection you don't own", async () => {
+    const owner = await getUserWithProfile();
+    const sharer = await getUserWithProfile({
+      firstName: "Sharer",
+      lastName: "Person",
+    });
+    const recipient = await getUserWithProfile({
+      firstName: "Recip",
+      lastName: "Ient",
+    });
+
+    const post = await createPostAsUser(owner.accessToken);
+    const collection = await createCollectionAsUser(
+      owner.accessToken,
+      [{ publicId: post.publicId, position: 1 }],
+      { isPrivate: true },
+    );
+
+    const chatRes = await createChatAsUser(
+      sharer.accessToken,
+      recipient.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+
+    const res = await sendMessage(sharer.accessToken, chatId, {
+      type: "COLLECTION",
+      collectionId: collection.publicId,
+    });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for a nonexistent postId in a POST message", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+    const chatRes = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+
+    const res = await sendMessage(user1.accessToken, chatId, {
+      type: "POST",
+      postId: "018f4a4a-0000-7000-8000-000000000000",
+    });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for a nonexistent collectionId in a COLLECTION message", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+    const chatRes = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+
+    const res = await sendMessage(user1.accessToken, chatId, {
+      type: "COLLECTION",
+      collectionId: "018f4a4a-0000-7000-8000-000000000000",
+    });
+
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("POST /chats/:chatId/messages/:messageId (Reply to Message)", () => {
+  it("rejects unauthenticated requests", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+    const chatRes = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+    const msg = await sendMessage(user1.accessToken, chatId, {
+      type: "TEXT",
+      text: "Hi",
+    });
+
+    const res = await replyToMessage("", chatId, msg.body.publicId, "reply");
+    expect(res.status).toBe(401);
+  });
+
   it("replies to an existing message in the chat", async () => {
     const user1 = await getUserWithProfile();
     const user2 = await getUserWithProfile({
@@ -211,9 +361,86 @@ describe("POST /chats/:chatId/messages/:messageId (Reply to Message)", () => {
     expect(res.body.text).toBe("This is a reply");
     expect(res.body.replyTo.publicId).toBe(initialMessage.body.publicId);
   });
+
+  it("rejects replying with an invalid messageId format", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+    const chatRes = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+
+    const res = await replyToMessage(
+      user1.accessToken,
+      chatId,
+      "not-a-uuid",
+      "text",
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects replying to a message that belongs to a different chat", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+    const outsider = await getUserWithProfile({
+      firstName: "Third",
+      lastName: "Party",
+    });
+
+    const chatA = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const chatB = await createChatAsUser(
+      user1.accessToken,
+      outsider.profile.publicId,
+    );
+
+    const messageInChatB = await sendMessage(
+      user1.accessToken,
+      chatB.body.publicId,
+      { type: "TEXT", text: "Message in chat B" },
+    );
+
+    const res = await replyToMessage(
+      user1.accessToken,
+      chatA.body.publicId,
+      messageInChatB.body.publicId,
+      "Cross-chat reply attempt",
+    );
+
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("DELETE /chats/:chatId/messages/:messageId (Deactivate Message)", () => {
+  it("rejects unauthenticated requests", async () => {
+    const sender = await getUserWithProfile();
+    const recipient = await getUserWithProfile({
+      firstName: "Delete",
+      lastName: "Tester",
+    });
+    const chatRes = await createChatAsUser(
+      sender.accessToken,
+      recipient.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+    const messageRes = await sendMessage(sender.accessToken, chatId, {
+      type: "TEXT",
+      text: "Message to delete",
+    });
+
+    const res = await deleteMessage("", chatId, messageRes.body.publicId);
+    expect(res.status).toBe(401);
+  });
+
   it("soft-deletes (deactivates) a message owned by the caller", async () => {
     const sender = await getUserWithProfile();
     const recipient = await getUserWithProfile({
@@ -277,5 +504,26 @@ describe("DELETE /chats/:chatId/messages/:messageId (Deactivate Message)", () =>
       where: { publicId: messagePublicId },
     });
     expect(messageInDb?.active).toBe(true);
+  });
+
+  it("returns 404 for a nonexistent messageId", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+    const chatRes = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const chatId = chatRes.body.publicId;
+
+    const res = await deleteMessage(
+      user1.accessToken,
+      chatId,
+      "018f4a4a-0000-7000-8000-000000000000",
+    );
+
+    expect(res.status).toBe(404);
   });
 });

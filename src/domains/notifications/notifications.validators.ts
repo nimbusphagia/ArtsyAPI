@@ -5,11 +5,11 @@ export const notificationTypes = [
   "LIKE_POST",
   "LIKE_COMMENT",
   "LIKE_COLLECTION",
-  "COMMENT",
-  "REPOST",
+  "COMMENT_POST",
+  "SHARE_POST",
   "NEW_POST",
   "NEW_COLLECTION",
-  "FOLLOW",
+  "FOLLOW_PROFILE",
 ] as const;
 export const NotificationTypeSchema = z.enum(notificationTypes);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
@@ -53,6 +53,9 @@ export type NotificationPage = z.infer<typeof NotificationPageSchema>;
 // Prisma
 export const NotificationSelect = {
   publicId: true,
+  recipient: {
+    select: { publicId: true },
+  },
   get actor() {
     return { select: ProfileValidators.ProfileLazySelect };
   },

@@ -26,7 +26,7 @@ export async function replyToMessage(
   return request(app)
     .post(`/chats/${chatId}/messages/${messageId}`)
     .set("Authorization", `Bearer ${accessToken}`)
-    .send({ replyToId: messageId, text });
+    .send({ text });
 }
 
 export async function deleteMessage(

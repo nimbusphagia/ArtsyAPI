@@ -46,7 +46,7 @@ export async function followProfileById(
   await createNotification({
     recipientId: targetProfile.id,
     actorId: currentProfileId,
-    type: "FOLLOW",
+    type: "FOLLOW_PROFILE",
   });
 }
 

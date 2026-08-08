@@ -78,7 +78,7 @@ export async function createRepost(postId: string, currentUserId: string) {
   await createNotification({
     recipientId: post.authorId,
     actorId: currentProfileId,
-    type: "REPOST",
+    type: "SHARE_POST",
     postId: post.id,
   });
 

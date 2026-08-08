@@ -59,6 +59,71 @@ describe("POST /chats", () => {
 
     expect(res.status).toBe(400);
   });
+
+  it("rejects creating a chat with yourself", async () => {
+    const user = await getUserWithProfile();
+    const res = await createChatAsUser(user.accessToken, user.profile.publicId);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects creating a duplicate chat with the same profile", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+
+    await createChatAsUser(user1.accessToken, user2.profile.publicId);
+    const res = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects creating a chat with someone who has blocked you", async () => {
+    const blocker = await getUserWithProfile();
+    const user = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+
+    await prisma.block.create({
+      data: {
+        blocker: { connect: { publicId: blocker.profile.publicId } },
+        blocked: { connect: { publicId: user.profile.publicId } },
+      },
+    });
+
+    const res = await createChatAsUser(
+      user.accessToken,
+      blocker.profile.publicId,
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects creating a chat with someone you've blocked", async () => {
+    const blocker = await getUserWithProfile();
+    const target = await getUserWithProfile({
+      firstName: "Target",
+      lastName: "User",
+    });
+
+    await prisma.block.create({
+      data: {
+        blocker: { connect: { publicId: blocker.profile.publicId } },
+        blocked: { connect: { publicId: target.profile.publicId } },
+      },
+    });
+
+    const res = await createChatAsUser(
+      blocker.accessToken,
+      target.profile.publicId,
+    );
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("GET /chats", () => {
@@ -84,6 +149,27 @@ describe("GET /chats", () => {
     expect(res.body[0].remoteMember.profile.publicId).toBe(
       user2.profile.publicId,
     );
+  });
+
+  it("hides a chat from the list once the other member has blocked you", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+
+    await createChatAsUser(user1.accessToken, user2.profile.publicId);
+
+    await prisma.block.create({
+      data: {
+        blocker: { connect: { publicId: user2.profile.publicId } },
+        blocked: { connect: { publicId: user1.profile.publicId } },
+      },
+    });
+
+    const res = await getUserChats(user1.accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
   });
 });
 
@@ -123,9 +209,57 @@ describe("GET /chats/:chatId", () => {
 
     expect(res.status).toBe(400);
   });
+
+  it("returns 404 for a chat the user is not a member of", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+    const outsider = await getUserWithProfile({
+      firstName: "Third",
+      lastName: "Party",
+    });
+
+    const chat = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const res = await getChat(outsider.accessToken, chat.body.publicId);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for a chat once the other member has blocked you", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+
+    const chat = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+
+    await prisma.block.create({
+      data: {
+        blocker: { connect: { publicId: user2.profile.publicId } },
+        blocked: { connect: { publicId: user1.profile.publicId } },
+      },
+    });
+
+    const res = await getChat(user1.accessToken, chat.body.publicId);
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("DELETE /chats/:chatMemberId/archive", () => {
+  it("rejects unauthenticated requests", async () => {
+    const res = await archiveChat("", "018f4a4a-0000-7000-8000-000000000000");
+    expect(res.status).toBe(401);
+  });
+
   it("archives the chat member relationship and returns 204", async () => {
     const user1 = await getUserWithProfile();
     const user2 = await getUserWithProfile({
@@ -150,9 +284,44 @@ describe("DELETE /chats/:chatMemberId/archive", () => {
     });
     expect(memberInDb?.isArchived).toBe(true);
   });
+
+  it("returns 404 archiving a chat member that doesn't belong to you", async () => {
+    const user1 = await getUserWithProfile();
+    const user2 = await getUserWithProfile({
+      firstName: "User",
+      lastName: "Two",
+    });
+
+    const chat = await createChatAsUser(
+      user1.accessToken,
+      user2.profile.publicId,
+    );
+    const chatDetailForUser2 = await getChat(
+      user2.accessToken,
+      chat.body.publicId,
+    );
+    const user2MemberId = chatDetailForUser2.body.localMember.publicId;
+
+    const res = await archiveChat(user1.accessToken, user2MemberId);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 archiving a nonexistent chatMemberId", async () => {
+    const user = await getUserWithProfile();
+    const res = await archiveChat(
+      user.accessToken,
+      "018f4a4a-0000-7000-8000-000000000000",
+    );
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("POST /chats/:chatMemberId/unarchive", () => {
+  it("rejects unauthenticated requests", async () => {
+    const res = await unarchiveChat("", "018f4a4a-0000-7000-8000-000000000000");
+    expect(res.status).toBe(401);
+  });
+
   it("unarchives an archived chat member and returns 200", async () => {
     const user1 = await getUserWithProfile();
     const user2 = await getUserWithProfile({
@@ -176,5 +345,14 @@ describe("POST /chats/:chatMemberId/unarchive", () => {
       where: { publicId: localMemberId },
     });
     expect(memberInDb?.isArchived).toBe(false);
+  });
+
+  it("returns 404 unarchiving a nonexistent chatMemberId", async () => {
+    const user = await getUserWithProfile();
+    const res = await unarchiveChat(
+      user.accessToken,
+      "018f4a4a-0000-7000-8000-000000000000",
+    );
+    expect(res.status).toBe(404);
   });
 });

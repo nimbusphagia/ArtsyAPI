@@ -38,6 +38,7 @@ export async function replyToMessage(
     const data = ReplyRequestSchema.parse({
       ...req.body,
       chatId: req.params.chatId,
+      replyToId: req.params.messageId,
     });
     const reply = await replyToMessageById(data, currentUserId);
     res.status(201).json(reply);

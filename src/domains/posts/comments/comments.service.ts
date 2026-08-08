@@ -50,7 +50,7 @@ export async function createComment(
   await createNotification({
     recipientId: post.authorId,
     actorId: currentProfileId,
-    type: "COMMENT",
+    type: "COMMENT_POST",
     commentId: rawComment.id,
   });
 

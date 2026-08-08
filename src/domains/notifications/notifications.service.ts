@@ -1,3 +1,4 @@
+import io from "../../config/socket";
 import { UnauthorizedError } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
 import {
@@ -16,7 +17,7 @@ export async function createNotification(
 ): Promise<void> {
   if (input.recipientId === input.actorId) return;
   try {
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         recipientId: input.recipientId,
         actorId: input.actorId,
@@ -25,7 +26,14 @@ export async function createNotification(
         commentId: input.commentId ?? null,
         collectionId: input.collectionId ?? null,
       },
+      select: {
+        recipient: { select: { publicId: true } },
+      },
     });
+    io.to(`user:${notification.recipient.publicId}`).emit(
+      "notification:new",
+      notification,
+    );
   } catch (error) {
     console.error(error);
   }
@@ -48,10 +56,10 @@ export async function createFollowerNotifications(
     const chunk = rows.slice(i, i + FANOUT_CHUNK_SIZE);
     try {
       await prisma.notification.createMany({ data: chunk });
-    } catch (error) {
+    } catch (err) {
       console.error(
         `Failed to create ${input.type} fan-out notifications for chunk ${i}-${i + chunk.length}:`,
-        error,
+        err,
       );
     }
   }
