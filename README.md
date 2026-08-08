@@ -31,7 +31,9 @@ API design:
     - [Collections CRUD](#collections-crud)
     - [Collection Posts](#collection-posts)
     - [Collection Likes](#collection-likes)
+  - [Notifications](#notifications)
   - [Chats](#chats)
+- [Real-Time Layer](#real-time-layer)
 - [Testing](#testing)
 
 ## Tech Stack
@@ -41,7 +43,7 @@ API design:
 - **Zod** — request validation
 - **Passport** (JWT + Google OAuth) — authentication
 - **Cloudinary** — media storage for images and video
-- **Socket.IO** — real-time layer (configured, not yet wired into chat behavior)
+- **Socket.IO** — real-time layer for notifications and chat
 
 ## Core Concepts
 
@@ -54,6 +56,8 @@ API design:
 **Privacy is enforced per-endpoint.** There's no single access-control gate; each endpoint checks privacy and blocking status on its own terms.
 
 **Refresh tokens rotate and detect reuse.** Access tokens are short-lived. If a refresh token is reused after already being rotated, its entire token family is revoked.
+
+**Notifications are best-effort and never block the action that triggered them.** Liking a post, commenting, following, and reposting all notify the relevant profile; creating a post or collection notifies every follower. If a notification fails to write, the triggering action still succeeds.
 
 **Chats are intentionally minimal.** Direct messages only, supporting text and the sharing of posts or collections. No group chats, no extra surface area.
 
@@ -173,8 +177,54 @@ Base path: `/collections` — all routes require authentication
 | POST | `/:collectionId/likes` | Like a collection |
 | DELETE | `/:collectionId/likes` | Remove a like from a collection |
 
+### Notifications
+Base path: `/notifications` — all routes require authentication, and are always scoped to the current user.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | List notifications, newest first (cursor-paginated) |
+| PATCH | `/:notificationId/read` | Mark a notification as read |
+
 ### Chats
-Base path: `/chats` — all routes require authentication. Direct messages only, supporting text and the sharing of posts or collections. Real-time delivery is not yet implemented.
+Base path: `/chats` — all routes require authentication. Direct messages only, supporting text and the sharing of posts or collections.
+
+#### Chats CRUD
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/` | Start a chat with another profile |
+| GET | `/` | List the current user's chats |
+| GET | `/:chatId` | Get a chat, including its messages |
+| DELETE | `/:chatMemberId/archive` | Archive a chat locally |
+| POST | `/:chatMemberId/unarchive` | Unarchive a chat locally |
+
+#### Messages
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/:chatId/messages` | Send a message (text, post, or collection) |
+| POST | `/:chatId/messages/:messageId` | Reply to a message |
+| DELETE | `/:chatId/messages/:messageId` | Deactivate (soft-delete) a message |
+
+## Real-Time Layer
+
+Socket.IO sits alongside the REST API to push live updates for notifications and chats. REST remains the source of truth — a fresh `GET` always reflects the current state — sockets exist purely to deliver updates while a client is connected, so nothing needs to be polled for or replayed after a reconnect.
+
+**Authentication.** A socket connection is authenticated the same way a REST request is: the client sends its access token during the handshake, which is verified and resolved to a profile before the connection is accepted.
+
+**Rooms.**
+- `profile:{id}` — every connected socket joins its own profile's room. Used for notifications and for being told a new chat was started.
+- `chat:{id}` — a socket joins the room for every chat its profile is a member of, at connection time. Joining a brand-new chat happens immediately when it's created, so a live connection never has to reconnect to start receiving messages in it.
+
+**Events**
+
+| Event | Room | When |
+|-------|------|------|
+| `notification:new` | `profile:{id}` | A single-recipient notification is created (a like, a comment, a repost, a follow) |
+| `notification:new:lite` | `profile:{id}` | A follower notification fans out (a new post or collection from someone you follow) |
+| `chat:new` | `profile:{id}` | Someone starts a new chat with you |
+| `message:new` | `chat:{id}` | A message or reply is sent |
+| `message:delete:lite` | `chat:{id}` | A message is deactivated |
 
 ## Testing
 
