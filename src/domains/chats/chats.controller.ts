@@ -1,3 +1,4 @@
+import io from "../../config/socket";
 import { Request, Response, NextFunction } from "express";
 import { UnauthorizedError } from "../../config/errors/errors";
 import { publicIdSchema } from "../../config/utils/validationUtils";
@@ -18,7 +19,16 @@ export async function createChat(
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
     const targetProfileId = publicIdSchema.parse(req.body.profileId);
-    const chat = await createChatByProfiles(targetProfileId, currentUserId);
+    const { chat, profileIds } = await createChatByProfiles(
+      targetProfileId,
+      currentUserId,
+    );
+    io.in([
+      `profile:${profileIds.current}`,
+      `profile:${profileIds.target}`,
+    ]).socketsJoin(`chat:${chat.id}`);
+
+    io.to(`profile:${profileIds.target}`).emit("chat:new", chat.data);
     res.status(201).json(chat);
   } catch (error) {
     next(error);

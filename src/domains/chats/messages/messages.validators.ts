@@ -28,6 +28,12 @@ export const MessageBasicSchema = z.object({
 
 export type MessageLazyRes = z.infer<typeof MessageBasicSchema>;
 
+// Controller Response
+export type MessageDeleteResponse = {
+  id: number;
+  publicId: string;
+};
+
 // With relations
 export const MessageResponseSchema = MessageBasicSchema.extend({
   replyTo: MessageBasicSchema.nullable(),

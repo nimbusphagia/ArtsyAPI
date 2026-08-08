@@ -6,6 +6,7 @@ import { prisma } from "../../../config/prisma";
 import { Prisma } from "../../../generated/prisma/client";
 import { ProfileIsNotBlocked } from "../../profiles/profiles.validators";
 import {
+  MessageDeleteResponse,
   MessageCreateReq,
   MessageRes,
   MessageSelect,
@@ -17,7 +18,7 @@ import {
 export async function createNewMessage(
   data: MessageCreateReq,
   currentUserId: string,
-): Promise<MessageRes> {
+): Promise<{ message: MessageRes; chatId: number }> {
   const currentUser = await prisma.user.findFirst({
     where: {
       publicId: currentUserId,
@@ -104,14 +105,14 @@ export async function createNewMessage(
       );
     }
   }
-  return parseMessage(rawMessage);
+  return { message: parseMessage(rawMessage), chatId: chatMember.chatId };
 }
 
 // Reply
 export async function replyToMessageById(
   data: ReplyReq,
   currentUserId: string,
-): Promise<MessageRes> {
+): Promise<{ message: MessageRes; chatId: number }> {
   const currentUser = await prisma.user.findFirst({
     where: {
       publicId: currentUserId,
@@ -161,13 +162,14 @@ export async function replyToMessageById(
     select: MessageSelect,
   });
 
-  return parseMessage(rawReply);
+  return { message: parseMessage(rawReply), chatId: chatMember.chatId };
 }
 // Soft delete
+
 export async function deactivateMessageById(
   messageId: string,
   currentUserId: string,
-): Promise<void> {
+): Promise<MessageDeleteResponse> {
   const currentUser = await prisma.user.findFirst({
     where: {
       publicId: currentUserId,
@@ -180,7 +182,7 @@ export async function deactivateMessageById(
 
   const currentProfileId = currentUser.profile!.id;
 
-  await prisma.message.update({
+  const message = await prisma.message.update({
     where: {
       publicId: messageId,
       ownerId: currentProfileId,
@@ -198,5 +200,7 @@ export async function deactivateMessageById(
     data: {
       active: false,
     },
+    select: { chat: { select: { id: true, publicId: true } } },
   });
+  return { id: message.chat.id, publicId: message.chat.publicId };
 }

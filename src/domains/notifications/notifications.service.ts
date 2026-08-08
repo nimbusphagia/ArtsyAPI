@@ -16,6 +16,7 @@ export async function createNotification(
   input: NotificationCreateInput,
 ): Promise<void> {
   if (input.recipientId === input.actorId) return;
+
   try {
     const notification = await prisma.notification.create({
       data: {
@@ -26,19 +27,17 @@ export async function createNotification(
         commentId: input.commentId ?? null,
         collectionId: input.collectionId ?? null,
       },
-      select: {
-        recipient: { select: { publicId: true } },
-      },
+      select: NotificationSelect,
     });
-    io.to(`user:${notification.recipient.publicId}`).emit(
+
+    io.to(`profile:${input.recipientId}`).emit(
       "notification:new",
-      notification,
+      parseNotification(notification),
     );
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(`Failed to create ${input.type} notification:`, err);
   }
 }
-
 const FANOUT_CHUNK_SIZE = 1000;
 
 export async function createFollowerNotifications(
@@ -56,6 +55,12 @@ export async function createFollowerNotifications(
     const chunk = rows.slice(i, i + FANOUT_CHUNK_SIZE);
     try {
       await prisma.notification.createMany({ data: chunk });
+      for (const row of chunk) {
+        io.to(`profile:${row.recipientId}`).emit("notification:new:lite", {
+          type: row.type,
+          actorId: input.actorId,
+        });
+      }
     } catch (err) {
       console.error(
         `Failed to create ${input.type} fan-out notifications for chunk ${i}-${i + chunk.length}:`,
@@ -64,7 +69,6 @@ export async function createFollowerNotifications(
     }
   }
 }
-
 export async function getNotifications(
   currentUserId: string,
   opts: NotificationPage,

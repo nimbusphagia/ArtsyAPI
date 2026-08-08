@@ -7,6 +7,7 @@ import {
 } from "./messages.service";
 import { UnauthorizedError } from "../../../config/errors/errors";
 import { publicIdSchema } from "../../../config/utils/validationUtils";
+import io from "../../../config/socket";
 
 export async function createMessage(
   req: Request,
@@ -20,7 +21,8 @@ export async function createMessage(
       ...req.body,
       chatId: req.params.chatId,
     });
-    const message = await createNewMessage(data, currentUserId);
+    const { chatId, message } = await createNewMessage(data, currentUserId);
+    io.to(`chat:${chatId}`).emit("message:new", message);
     res.status(201).json(message);
   } catch (error) {
     next(error);
@@ -40,8 +42,9 @@ export async function replyToMessage(
       chatId: req.params.chatId,
       replyToId: req.params.messageId,
     });
-    const reply = await replyToMessageById(data, currentUserId);
-    res.status(201).json(reply);
+    const { message, chatId } = await replyToMessageById(data, currentUserId);
+    io.to(`chat:${chatId}`).emit("message:new", message);
+    res.status(201).json(message);
   } catch (error) {
     next(error);
   }
@@ -56,7 +59,11 @@ export async function deleteMessage(
     const currentUserId = req.user?.publicId;
     if (!currentUserId) throw new UnauthorizedError();
     const messageId = publicIdSchema.parse(req.params.messageId);
-    await deactivateMessageById(messageId, currentUserId);
+    const chat = await deactivateMessageById(messageId, currentUserId);
+    io.to(`chat:${chat.id}`).emit("message:delete:lite", {
+      messageId,
+      chatId: chat.publicId,
+    });
     res.status(204).end();
   } catch (error) {
     next(error);

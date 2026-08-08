@@ -20,7 +20,17 @@ export const ChatResponseSchema = ChatLazyResponseSchema.extend({
   messages: z.lazy(() => MessageValidators.MessageResponseSchema.array()),
 });
 export type ChatRes = z.infer<typeof ChatResponseSchema>;
-
+// Controller Response
+export type ChatCreateResponse = {
+  chat: {
+    data: ChatLazyRes;
+    id: number;
+  };
+  profileIds: {
+    current: number;
+    target: number;
+  };
+};
 // Prisma
 export const ChatSelect = {
   publicId: true,

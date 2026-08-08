@@ -2,6 +2,7 @@ import { NotFoundError, UnauthorizedError } from "../../config/errors/errors";
 import { prisma } from "../../config/prisma";
 import { ProfileIsNotBlocked } from "../profiles/profiles.validators";
 import {
+  ChatCreateResponse,
   ChatLazyRes,
   ChatLazySelect,
   ChatRes,
@@ -105,7 +106,7 @@ export async function getChatById(
 export async function createChatByProfiles(
   targetProfileId: string,
   currentUserId: string,
-) {
+): Promise<ChatCreateResponse> {
   const currentUser = await prisma.user.findFirst({
     where: {
       publicId: currentUserId,
@@ -148,10 +149,19 @@ export async function createChatByProfiles(
         },
       },
     },
-    select: ChatLazySelect,
+    select: { ...ChatLazySelect, id: true },
   });
 
-  return parseChatLazy(rawChat, currentUser.profile!.publicId);
+  return {
+    chat: {
+      data: parseChatLazy(rawChat, currentUser.profile!.publicId),
+      id: rawChat.id,
+    },
+    profileIds: {
+      current: currentProfileId,
+      target: targetProfile.id,
+    },
+  };
 }
 
 // Archive
