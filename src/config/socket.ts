@@ -75,7 +75,7 @@ io.on("connection", async (socket) => {
   } catch (err) {
     console.error(`Failed to join chat rooms for profile ${profile.id}:`, err);
   }
-
+  socket.emit("ready");
   socket.on("disconnect", () => {
     console.log(`Disconnected: ${socket.id}`);
   });

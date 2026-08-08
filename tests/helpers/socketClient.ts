@@ -11,8 +11,8 @@ export function connectSocket(
       forceNew: true,
     });
 
-    socket.on("connect", () => resolve(socket));
-    socket.on("connect_error", (err) => reject(err));
+    socket.once("ready", () => resolve(socket));
+    socket.on("connect_error", (err: Error) => reject(err));
   });
 }
 

@@ -62,7 +62,7 @@ describe("GET /notifications", () => {
     expect(res.body[0].read).toBe(false);
   });
 
-  it("creates a COMMENT notification for the post author", async () => {
+  it("creates a COMMENT_POST notification for the post author", async () => {
     const author = await getUserWithProfile();
     const commenter = await getUserWithProfile({
       firstName: "Commenter",
@@ -74,11 +74,11 @@ describe("GET /notifications", () => {
 
     const res = await getNotifications(author.accessToken);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].type).toBe("COMMENT");
+    expect(res.body[0].type).toBe("COMMENT_POST");
     expect(res.body[0].commentId).toBeDefined();
   });
 
-  it("creates a REPOST notification for the original author", async () => {
+  it("creates a SHARE_POST notification for the original author", async () => {
     const author = await getUserWithProfile();
     const reposter = await getUserWithProfile({
       firstName: "Reposter",
@@ -90,10 +90,10 @@ describe("GET /notifications", () => {
 
     const res = await getNotifications(author.accessToken);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].type).toBe("REPOST");
+    expect(res.body[0].type).toBe("SHARE_POST");
   });
 
-  it("creates a FOLLOW notification for the followed profile", async () => {
+  it("creates a FOLLOW_PROFILE notification for the followed profile", async () => {
     const target = await getUserWithProfile({
       firstName: "Target",
       lastName: "User",
@@ -107,7 +107,7 @@ describe("GET /notifications", () => {
 
     const res = await getNotifications(target.accessToken);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].type).toBe("FOLLOW");
+    expect(res.body[0].type).toBe("FOLLOW_PROFILE");
     expect(res.body[0].actor.publicId).toBe(follower.profile.publicId);
   });
 

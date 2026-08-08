@@ -1,4 +1,13 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import { Socket } from "socket.io-client";
 import { resetDb } from "../helpers/resetDb";
 import { getUserWithProfile } from "../helpers/profile";
@@ -59,7 +68,10 @@ describe("notification sockets", () => {
 
   it("emits notification:new to the recipient when their post is liked", async () => {
     const author = await getUserWithProfile();
-    const liker = await getUserWithProfile({ firstName: "Liker", lastName: "Person" });
+    const liker = await getUserWithProfile({
+      firstName: "Liker",
+      lastName: "Person",
+    });
     const post = await createPostAsUser(author.accessToken);
 
     const authorSocket = await connect(author.accessToken);
@@ -73,9 +85,15 @@ describe("notification sockets", () => {
     expect(payload.postId).toBe(post.publicId);
   });
 
-  it("emits notification:new to the followed profile on FOLLOW", async () => {
-    const target = await getUserWithProfile({ firstName: "Target", lastName: "User" });
-    const follower = await getUserWithProfile({ firstName: "Follower", lastName: "Person" });
+  it("emits notification:new to the followed profile on FOLLOW_PROFILE", async () => {
+    const target = await getUserWithProfile({
+      firstName: "Target",
+      lastName: "User",
+    });
+    const follower = await getUserWithProfile({
+      firstName: "Follower",
+      lastName: "Person",
+    });
 
     const targetSocket = await connect(target.accessToken);
     const eventPromise = waitForEvent(targetSocket, "notification:new");
@@ -83,7 +101,7 @@ describe("notification sockets", () => {
     await followProfile(follower.accessToken, target.profile.publicId);
 
     const payload = await eventPromise;
-    expect(payload.type).toBe("FOLLOW");
+    expect(payload.type).toBe("FOLLOW_PROFILE");
     expect(payload.actor.publicId).toBe(follower.profile.publicId);
   });
 
@@ -106,8 +124,14 @@ describe("notification sockets", () => {
 
   it("does not emit to an unrelated, uninvolved socket", async () => {
     const author = await getUserWithProfile();
-    const liker = await getUserWithProfile({ firstName: "Liker", lastName: "Person" });
-    const bystander = await getUserWithProfile({ firstName: "By", lastName: "Stander" });
+    const liker = await getUserWithProfile({
+      firstName: "Liker",
+      lastName: "Person",
+    });
+    const bystander = await getUserWithProfile({
+      firstName: "By",
+      lastName: "Stander",
+    });
     const post = await createPostAsUser(author.accessToken);
 
     const bystanderSocket = await connect(bystander.accessToken);
@@ -125,8 +149,14 @@ describe("notification sockets", () => {
 
   it("emits notification:new:lite to every follower on a new post (fan-out)", async () => {
     const author = await getUserWithProfile();
-    const followerA = await getUserWithProfile({ firstName: "Follower", lastName: "A" });
-    const followerB = await getUserWithProfile({ firstName: "Follower", lastName: "B" });
+    const followerA = await getUserWithProfile({
+      firstName: "Follower",
+      lastName: "A",
+    });
+    const followerB = await getUserWithProfile({
+      firstName: "Follower",
+      lastName: "B",
+    });
 
     await followProfile(followerA.accessToken, author.profile.publicId);
     await followProfile(followerB.accessToken, author.profile.publicId);
@@ -146,7 +176,10 @@ describe("notification sockets", () => {
 
   it("does not emit a fan-out notification to a non-follower", async () => {
     const author = await getUserWithProfile();
-    const nonFollower = await getUserWithProfile({ firstName: "Never", lastName: "Followed" });
+    const nonFollower = await getUserWithProfile({
+      firstName: "Never",
+      lastName: "Followed",
+    });
 
     const socket = await connect(nonFollower.accessToken);
 

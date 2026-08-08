@@ -29,7 +29,7 @@ export async function createChat(
     ]).socketsJoin(`chat:${chat.id}`);
 
     io.to(`profile:${profileIds.target}`).emit("chat:new", chat.data);
-    res.status(201).json(chat);
+    res.status(201).json(chat.data);
   } catch (error) {
     next(error);
   }
