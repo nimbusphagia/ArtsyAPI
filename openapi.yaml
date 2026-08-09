@@ -1,0 +1,448 @@
+openapi: 3.0.3
+info:
+  title: ArtsyAPI
+  description: >
+    Backend for Artsy, a social platform for artists. Profiles are the
+    unit of identity; posts and collections are extensions of a profile.
+  version: "1.0.0"
+
+servers:
+  - url: /
+
+tags:
+  - name: Auth
+  - name: Profiles
+  - name: Posts
+  - name: Comments
+  - name: Likes
+  - name: Reposts
+  - name: Collections
+  - name: Feed
+  - name: Notifications
+  - name: Chats
+
+paths:
+  /auth/google:
+    get:
+      tags: [Auth]
+      summary: Start Google OAuth flow
+  /auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Google OAuth callback
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new account
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh token and issue a new access token
+  /auth/account:
+    patch:
+      tags: [Auth]
+      summary: Edit the current account
+      security: [{ bearerAuth: [] }]
+
+  /profiles:
+    post:
+      tags: [Profiles]
+      summary: Create a profile (first-time setup; accepts a picture and banner)
+      security: [{ bearerAuth: [] }]
+    get:
+      tags: [Profiles]
+      summary: List profiles
+      security: [{ bearerAuth: [] }]
+  /profiles/me:
+    get:
+      tags: [Profiles]
+      summary: Get the current user's profile
+      security: [{ bearerAuth: [] }]
+    patch:
+      tags: [Profiles]
+      summary: Edit the current user's profile
+      security: [{ bearerAuth: [] }]
+  /profiles/posts:
+    get:
+      tags: [Profiles]
+      summary: List the current user's posts
+      security: [{ bearerAuth: [] }]
+  /profiles/collections:
+    get:
+      tags: [Profiles]
+      summary: List the current user's collections
+      security: [{ bearerAuth: [] }]
+  /profiles/reposts:
+    get:
+      tags: [Profiles]
+      summary: List the current user's reposts
+      security: [{ bearerAuth: [] }]
+  /profiles/blocked:
+    get:
+      tags: [Profiles]
+      summary: List profiles the current user has blocked
+      security: [{ bearerAuth: [] }]
+  /profiles/{profileId}:
+    get:
+      tags: [Profiles]
+      summary: Get a profile by id
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+  /profiles/{profileId}/posts:
+    get:
+      tags: [Profiles]
+      summary: List a profile's public posts
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+  /profiles/{profileId}/collections:
+    get:
+      tags: [Profiles]
+      summary: List a profile's public collections
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+  /profiles/{profileId}/follow:
+    post:
+      tags: [Profiles]
+      summary: Follow a profile
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+    delete:
+      tags: [Profiles]
+      summary: Unfollow a profile
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+  /profiles/{profileId}/followers:
+    get:
+      tags: [Profiles]
+      summary: List a profile's followers
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+  /profiles/{profileId}/followed:
+    get:
+      tags: [Profiles]
+      summary: List profiles a given profile follows
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+  /profiles/{profileId}/block:
+    post:
+      tags: [Profiles]
+      summary: Block a profile
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+    delete:
+      tags: [Profiles]
+      summary: Unblock a profile
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/profileId'
+
+  /posts:
+    post:
+      tags: [Posts]
+      summary: Create a post (accepts positioned slide files)
+      security: [{ bearerAuth: [] }]
+  /posts/{postId}:
+    get:
+      tags: [Posts]
+      summary: Get a public post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+    patch:
+      tags: [Posts]
+      summary: Edit a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+    delete:
+      tags: [Posts]
+      summary: Delete a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+
+  /posts/{postId}/comments:
+    get:
+      tags: [Comments]
+      summary: List comments on a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+    post:
+      tags: [Comments]
+      summary: Comment on a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+  /comments/{commentId}:
+    delete:
+      tags: [Comments]
+      summary: Remove a comment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/commentId'
+  /comments/{commentId}/likes:
+    post:
+      tags: [Comments]
+      summary: Like a comment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/commentId'
+    delete:
+      tags: [Comments]
+      summary: Remove a like from a comment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/commentId'
+
+  /posts/{postId}/likes:
+    get:
+      tags: [Likes]
+      summary: List likes on a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+    post:
+      tags: [Likes]
+      summary: Like a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+    delete:
+      tags: [Likes]
+      summary: Remove a like from a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+
+  /posts/{postId}/reposts:
+    post:
+      tags: [Reposts]
+      summary: Repost a post
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+    delete:
+      tags: [Reposts]
+      summary: Remove a repost
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/postId'
+
+  /collections:
+    post:
+      tags: [Collections]
+      summary: Create a collection
+      security: [{ bearerAuth: [] }]
+  /collections/{collectionId}:
+    get:
+      tags: [Collections]
+      summary: Get a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+    patch:
+      tags: [Collections]
+      summary: Edit collection info
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+    put:
+      tags: [Collections]
+      summary: Reorder posts within a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+    delete:
+      tags: [Collections]
+      summary: Delete a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+  /collections/{collectionId}/posts:
+    post:
+      tags: [Collections]
+      summary: Add a post to a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+    delete:
+      tags: [Collections]
+      summary: Remove a post from a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+  /collections/{collectionId}/likes:
+    get:
+      tags: [Collections]
+      summary: List likes on a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+    post:
+      tags: [Collections]
+      summary: Like a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+    delete:
+      tags: [Collections]
+      summary: Remove a like from a collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+
+  /feed/home:
+    get:
+      tags: [Feed]
+      summary: >
+        Reverse-chronological posts, reposts, and collections from
+        profiles you follow. Cursor-paginated via before (an item's
+        createdAt) and limit.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: before
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer }
+  /feed/explore:
+    get:
+      tags: [Feed]
+      summary: >
+        Public content ranked by convergence — how many profiles you
+        follow liked it. Excludes anything authored by you or by
+        someone you already follow. Falls back to a recent, unranked
+        stream of public content when there isn't enough signal to
+        rank. Paginated via limit.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer }
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications, newest first (cursor-paginated)
+      security: [{ bearerAuth: [] }]
+  /notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+
+  /chats:
+    post:
+      tags: [Chats]
+      summary: Start a chat with another profile
+      security: [{ bearerAuth: [] }]
+    get:
+      tags: [Chats]
+      summary: List the current user's chats
+      security: [{ bearerAuth: [] }]
+  /chats/{chatId}:
+    get:
+      tags: [Chats]
+      summary: Get a chat, including its messages
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/chatId'
+  /chats/{chatMemberId}/archive:
+    delete:
+      tags: [Chats]
+      summary: Archive a chat locally
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: chatMemberId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+  /chats/{chatMemberId}/unarchive:
+    post:
+      tags: [Chats]
+      summary: Unarchive a chat locally
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: chatMemberId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+  /chats/{chatId}/messages:
+    post:
+      tags: [Chats]
+      summary: Send a message (text, post, or collection)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/chatId'
+  /chats/{chatId}/messages/{messageId}:
+    post:
+      tags: [Chats]
+      summary: Reply to a message
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/chatId'
+        - $ref: '#/components/parameters/messageId'
+    delete:
+      tags: [Chats]
+      summary: Deactivate (soft-delete) a message
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/chatId'
+        - $ref: '#/components/parameters/messageId'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    profileId:
+      name: profileId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    postId:
+      name: postId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    commentId:
+      name: commentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    collectionId:
+      name: collectionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    chatId:
+      name: chatId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    messageId:
+      name: messageId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
