@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     // File Layout
-    "rootDir": "./src",
-    "outDir": "./dist",
+    "rootDir": "../Knick-Knacks/src",
+    "outDir": "../Knick-Knacks/dist",
 
     // Environment Settings
     "target": "ES2022",
@@ -30,6 +30,6 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["../Knick-Knacks/src/**/*"],
+  "exclude": ["../Knick-Knacks/node_modules", "../Knick-Knacks/dist"]
 }

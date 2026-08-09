@@ -1,6 +1,6 @@
-# ArtsyAPI
+# Knick Knacks
 
-ArtsyAPI is the backend for Artsy, a social platform made for artists to reclaim a space on the internet.
+Knick-Knacks is the backend for Knick Knack, a social platform made for artists to reclaim a space on the internet.
 
 Popular platforms hyperfocus on short content: short-form videos, stories, explore feeds designed to grab your attention as quickly as possible. We want to focus on the creative people who have passionate ideas to share with the world. That's why every profile is treated as an artist's space, whether the user thinks of themselves as one or not. The goal is to give people a place where creativity is valued, where they can look up to an artist and eventually be drawn into the silly little journey that is making art.
 

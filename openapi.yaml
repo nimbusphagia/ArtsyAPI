@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: ArtsyAPI
+  title: Knick Knacks
   description: >
-    Backend for Artsy, a social platform for artists. Profiles are the
+    Backend for Knick Knack, a social platform for artists. Profiles are the
     unit of identity; posts and collections are extensions of a profile.
   version: "1.0.0"
 
