@@ -151,7 +151,11 @@ export async function getExploreFeed(
   const followedIds = await getFollowedProfileIds(currentProfileId);
 
   if (followedIds.length === 0) {
-    return getRecentPublicFallback(currentProfileId, opts.limit);
+    return getRecentPublicFallback(
+      currentProfileId,
+      [currentProfileId],
+      opts.limit,
+    );
   }
 
   const excludedAuthorIds = [...followedIds, currentProfileId];
@@ -189,7 +193,11 @@ export async function getExploreFeed(
   ]);
 
   if (likedPosts.length === 0 && likedCollections.length === 0) {
-    return getRecentPublicFallback(currentProfileId, opts.limit);
+    return getRecentPublicFallback(
+      currentProfileId,
+      excludedAuthorIds,
+      opts.limit,
+    );
   }
 
   const collectionSelect = buildViewerScopedCollectionSelect(currentProfileId);
@@ -248,6 +256,7 @@ export async function getExploreFeed(
 // Fallback
 async function getRecentPublicFallback(
   currentProfileId: number,
+  excludedAuthorIds: number[],
   limit: number,
 ): Promise<ExploreItem[]> {
   const notBlocked = ProfileIsNotBlocked(currentProfileId);
@@ -257,7 +266,7 @@ async function getRecentPublicFallback(
     prisma.post.findMany({
       where: {
         private: false,
-        authorId: { not: currentProfileId },
+        authorId: { notIn: excludedAuthorIds },
         author: notBlocked,
       },
       select: {
@@ -271,7 +280,7 @@ async function getRecentPublicFallback(
     prisma.collection.findMany({
       where: {
         private: false,
-        ownerId: { not: currentProfileId },
+        ownerId: { notIn: excludedAuthorIds },
         owner: notBlocked,
       },
       select: { ...collectionSelect, createdAt: true },
