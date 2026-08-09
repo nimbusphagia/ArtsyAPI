@@ -6,6 +6,7 @@ import postsRouter from "../domains/posts/posts.routes";
 import collectionsRouter from "../domains/collections/collections.routes";
 import chatsRouter from "../domains/chats/chats.routes";
 import notificationsRouter from "../domains/notifications/notifications.routes";
+import feedRouter from "../domains/feed/feed.routes";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ErrorHandler } from "./errors/errorHandler";
@@ -29,6 +30,7 @@ app.use("/auth", authRouter);
 app.use("/profiles", requireAuth, profilesRouter);
 app.use("/posts", requireAuth, postsRouter);
 app.use("/collections", requireAuth, collectionsRouter);
+app.use("/feed", requireAuth, feedRouter);
 app.use("/chats", requireAuth, chatsRouter);
 app.use("/notifications", requireAuth, notificationsRouter);
 
