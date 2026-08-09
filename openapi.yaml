@@ -2,8 +2,7 @@ openapi: 3.0.3
 info:
   title: Knick Knacks
   description: >
-    Backend for Knick Knack, a social platform for artists. Profiles are the
-    unit of identity; posts and collections are extensions of a profile.
+    Backend for Knick Knack, a social platform for artists.
   version: "1.0.0"
 
 servers:
@@ -34,58 +33,196 @@ paths:
     post:
       tags: [Auth]
       summary: Register a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
   /auth/login:
     post:
       tags: [Auth]
       summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
   /auth/refresh:
     post:
       tags: [Auth]
       summary: Rotate refresh token and issue a new access token
+      responses:
+        '200':
+          description: New access token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
   /auth/account:
     patch:
       tags: [Auth]
       summary: Edit the current account
       security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserEditRequest' }
+      responses:
+        '200':
+          description: Updated account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserResponse' }
 
   /profiles:
     post:
       tags: [Profiles]
       summary: Create a profile (first-time setup; accepts a picture and banner)
       security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nickname: { type: string }
+                description: { type: string }
+                profilePicture: { type: string, format: binary }
+                profileBanner: { type: string, format: binary }
+      responses:
+        '201':
+          description: Profile created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileLazyResponse' }
     get:
       tags: [Profiles]
       summary: List profiles
       security: [{ bearerAuth: [] }]
+      parameters:
+        - name: nickname
+          in: query
+          schema: { type: string }
+        - name: createdAt
+          in: query
+          schema: { type: string, enum: [asc, desc], default: desc }
+        - name: follow
+          in: query
+          schema: { type: string, enum: [followers, following, any], default: any }
+      responses:
+        '200':
+          description: List of profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ProfileLazyResponse' }
   /profiles/me:
     get:
       tags: [Profiles]
       summary: Get the current user's profile
       security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user's profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResponse' }
     patch:
       tags: [Profiles]
       summary: Edit the current user's profile
       security: [{ bearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nickname: { type: string }
+                description: { type: string }
+                profilePicture: { type: string, format: binary }
+                profileBanner: { type: string, format: binary }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResponse' }
   /profiles/posts:
     get:
       tags: [Profiles]
       summary: List the current user's posts
       security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user's posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PostLazyResponse' }
   /profiles/collections:
     get:
       tags: [Profiles]
       summary: List the current user's collections
       security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user's collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CollectionLazyResponse' }
   /profiles/reposts:
     get:
       tags: [Profiles]
       summary: List the current user's reposts
       security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user's reposts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RepostLazyResponse' }
   /profiles/blocked:
     get:
       tags: [Profiles]
       summary: List profiles the current user has blocked
       security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Blocked profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ProfileLazyResponse' }
   /profiles/{profileId}:
     get:
       tags: [Profiles]
@@ -93,6 +230,12 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '200':
+          description: A profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResponse' }
   /profiles/{profileId}/posts:
     get:
       tags: [Profiles]
@@ -100,6 +243,14 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '200':
+          description: Public posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PostLazyResponse' }
   /profiles/{profileId}/collections:
     get:
       tags: [Profiles]
@@ -107,6 +258,14 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '200':
+          description: Public collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CollectionLazyResponse' }
   /profiles/{profileId}/follow:
     post:
       tags: [Profiles]
@@ -114,12 +273,16 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '201': { description: Followed }
     delete:
       tags: [Profiles]
       summary: Unfollow a profile
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '204': { description: Unfollowed }
   /profiles/{profileId}/followers:
     get:
       tags: [Profiles]
@@ -127,6 +290,14 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '200':
+          description: Followers
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ProfileLazyResponse' }
   /profiles/{profileId}/followed:
     get:
       tags: [Profiles]
@@ -134,6 +305,14 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '200':
+          description: Followed profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ProfileLazyResponse' }
   /profiles/{profileId}/block:
     post:
       tags: [Profiles]
@@ -141,18 +320,42 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '200': { description: Blocked }
     delete:
       tags: [Profiles]
       summary: Unblock a profile
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/profileId'
+      responses:
+        '200': { description: Unblocked }
 
   /posts:
     post:
       tags: [Posts]
       summary: Create a post (accepts positioned slide files)
       security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                description: { type: string }
+              additionalProperties:
+                type: string
+                format: binary
+              description: >
+                Slide files are attached under fieldnames slide-1, slide-2, ...,
+                sequential starting at 1, no gaps or duplicates.
+      responses:
+        '201':
+          description: Post created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PostLazyResponse' }
   /posts/{postId}:
     get:
       tags: [Posts]
@@ -160,18 +363,41 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '200':
+          description: A post
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PostResponse' }
     patch:
       tags: [Posts]
       summary: Edit a post
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description: { type: string }
+                isPrivate: { type: boolean }
+      responses:
+        '200':
+          description: Updated post
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PostLazyResponse' }
     delete:
       tags: [Posts]
       summary: Delete a post
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '204': { description: Deleted }
 
   /posts/{postId}/comments:
     get:
@@ -180,12 +406,35 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '200':
+          description: Comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CommentResponse' }
     post:
       tags: [Comments]
       summary: Comment on a post
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, minLength: 1 }
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommentResponse' }
   /comments/{commentId}:
     delete:
       tags: [Comments]
@@ -193,6 +442,8 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/commentId'
+      responses:
+        '204': { description: Deleted }
   /comments/{commentId}/likes:
     post:
       tags: [Comments]
@@ -200,12 +451,16 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/commentId'
+      responses:
+        '201': { description: Liked }
     delete:
       tags: [Comments]
       summary: Remove a like from a comment
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/commentId'
+      responses:
+        '204': { description: Unliked }
 
   /posts/{postId}/likes:
     get:
@@ -214,18 +469,30 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '200':
+          description: Likes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LikeResponse' }
     post:
       tags: [Likes]
       summary: Like a post
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '201': { description: Liked }
     delete:
       tags: [Likes]
       summary: Remove a like from a post
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '204': { description: Unliked }
 
   /posts/{postId}/reposts:
     post:
@@ -234,18 +501,37 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '201':
+          description: Reposted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RepostLazyResponse' }
     delete:
       tags: [Reposts]
       summary: Remove a repost
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/postId'
+      responses:
+        '204': { description: Repost removed }
 
   /collections:
     post:
       tags: [Collections]
       summary: Create a collection
       security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CollectionCreateRequest' }
+      responses:
+        '201':
+          description: Collection created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CollectionResponse' }
   /collections/{collectionId}:
     get:
       tags: [Collections]
@@ -253,24 +539,54 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      responses:
+        '200':
+          description: A collection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CollectionResponse' }
     patch:
       tags: [Collections]
       summary: Edit collection info
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CollectionEditRequest' }
+      responses:
+        '200':
+          description: Updated collection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CollectionResponse' }
     put:
       tags: [Collections]
       summary: Reorder posts within a collection
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CollectionPostsEditRequest' }
+      responses:
+        '200':
+          description: Reordered collection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CollectionResponse' }
     delete:
       tags: [Collections]
       summary: Delete a collection
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      responses:
+        '204': { description: Deleted }
   /collections/{collectionId}/posts:
     post:
       tags: [Collections]
@@ -278,12 +594,38 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [postId]
+              properties:
+                postId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Post added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CollectionPostExtraLazy' }
     delete:
       tags: [Collections]
       summary: Remove a post from a collection
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [collectionPostId]
+              properties:
+                collectionPostId: { type: string, format: uuid }
+      responses:
+        '204': { description: Post removed }
   /collections/{collectionId}/likes:
     get:
       tags: [Collections]
@@ -291,18 +633,34 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      responses:
+        '200':
+          description: Likes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LikeResponse' }
     post:
       tags: [Collections]
       summary: Like a collection
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      responses:
+        '201':
+          description: Liked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LikeLazyResponse' }
     delete:
       tags: [Collections]
       summary: Remove a like from a collection
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/collectionId'
+      responses:
+        '204': { description: Unliked }
 
   /feed/home:
     get:
@@ -318,7 +676,15 @@ paths:
           schema: { type: string, format: date-time }
         - name: limit
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Home feed items
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/HomeFeedItem' }
   /feed/explore:
     get:
       tags: [Feed]
@@ -332,13 +698,36 @@ paths:
       parameters:
         - name: limit
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Explore feed items
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ExploreItem' }
 
   /notifications:
     get:
       tags: [Notifications]
       summary: List notifications, newest first (cursor-paginated)
       security: [{ bearerAuth: [] }]
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/NotificationResponse' }
   /notifications/{notificationId}/read:
     patch:
       tags: [Notifications]
@@ -349,16 +738,41 @@ paths:
           in: path
           required: true
           schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Marked as read }
 
   /chats:
     post:
       tags: [Chats]
       summary: Start a chat with another profile
       security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profileId]
+              properties:
+                profileId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Chat created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatLazyResponse' }
     get:
       tags: [Chats]
       summary: List the current user's chats
       security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ChatLazyResponse' }
   /chats/{chatId}:
     get:
       tags: [Chats]
@@ -366,6 +780,12 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/chatId'
+      responses:
+        '200':
+          description: A chat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatResponse' }
   /chats/{chatMemberId}/archive:
     delete:
       tags: [Chats]
@@ -376,6 +796,8 @@ paths:
           in: path
           required: true
           schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Archived }
   /chats/{chatMemberId}/unarchive:
     post:
       tags: [Chats]
@@ -386,6 +808,8 @@ paths:
           in: path
           required: true
           schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Unarchived }
   /chats/{chatId}/messages:
     post:
       tags: [Chats]
@@ -393,6 +817,17 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/chatId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MessageCreateRequest' }
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
   /chats/{chatId}/messages/{messageId}:
     post:
       tags: [Chats]
@@ -401,6 +836,21 @@ paths:
       parameters:
         - $ref: '#/components/parameters/chatId'
         - $ref: '#/components/parameters/messageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, minLength: 1 }
+      responses:
+        '201':
+          description: Reply sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
     delete:
       tags: [Chats]
       summary: Deactivate (soft-delete) a message
@@ -408,6 +858,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/chatId'
         - $ref: '#/components/parameters/messageId'
+      responses:
+        '204': { description: Deactivated }
 
 components:
   securitySchemes:
@@ -415,6 +867,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
   parameters:
     profileId:
       name: profileId
@@ -446,3 +899,409 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+
+  schemas:
+    # ---- Auth ----
+    RegisterRequest:
+      type: object
+      required: [email, password, confirmPassword, firstName, lastName]
+      properties:
+        email: { type: string, format: email }
+        password:
+          type: string
+          minLength: 8
+          maxLength: 20
+          description: Must include lowercase, uppercase, a number, and a special character.
+        confirmPassword: { type: string }
+        firstName: { type: string, minLength: 2, maxLength: 20 }
+        lastName: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 20 }
+    UserEditRequest:
+      type: object
+      properties:
+        firstName: { type: string, minLength: 2, maxLength: 20 }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+        newPassword: { type: string }
+        confirmNewPassword: { type: string }
+      description: At least one field must be provided. Changing password or email requires the current password and is blocked for OAuth-linked accounts.
+    UserResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        email: { type: string, format: email }
+        firstName: { type: string }
+        lastName: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # ---- Media / Assets ----
+    MediaResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        cloudinaryId: { type: string }
+        cloudinaryAssetId: { type: string }
+        resourceType: { type: string }
+        format: { type: string }
+        url: { type: string, format: uri }
+        thumbnail: { type: string, format: uri, nullable: true }
+        width: { type: integer, nullable: true }
+        height: { type: integer, nullable: true }
+        bytes: { type: integer }
+        duration: { type: number, nullable: true }
+        createdAt: { type: string, format: date-time }
+    MediaLazyResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        resourceType: { type: string }
+        format: { type: string }
+        url: { type: string, format: uri }
+        thumbnail: { type: string, format: uri, nullable: true }
+        bytes: { type: integer }
+        duration: { type: number, nullable: true }
+        createdAt: { type: string, format: date-time }
+    AssetResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [DEFAULT_PROFILE_PICTURE, DEFAULT_PROFILE_BANNER, PROFILE_PICTURE, PROFILE_BANNER]
+        media:
+          allOf:
+            - $ref: '#/components/schemas/MediaResponse'
+          nullable: true
+
+    # ---- Post Slides ----
+    PostSlideLazy:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0 }
+        media:
+          allOf:
+            - $ref: '#/components/schemas/MediaLazyResponse'
+          nullable: true
+    PostSlideResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0 }
+        media:
+          allOf:
+            - $ref: '#/components/schemas/MediaResponse'
+          nullable: true
+
+    # ---- Profiles ----
+    ProfileLazyResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        nickname: { type: string }
+        picture: { $ref: '#/components/schemas/AssetResponse' }
+        createdAt: { type: string, format: date-time }
+    ProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/ProfileLazyResponse'
+        - type: object
+          properties:
+            description: { type: string, nullable: true }
+            banner: { $ref: '#/components/schemas/AssetResponse' }
+            followerCount: { type: integer }
+            followingCount: { type: integer }
+            blocking:
+              type: array
+              items: { type: object, properties: { publicId: { type: string, format: uuid } } }
+            blockedBy:
+              type: array
+              items: { type: object, properties: { publicId: { type: string, format: uuid } } }
+            posts:
+              type: array
+              items: { $ref: '#/components/schemas/PostLazyResponse' }
+            reposts:
+              type: array
+              items: { $ref: '#/components/schemas/RepostLazyResponse' }
+            collections:
+              type: array
+              items: { $ref: '#/components/schemas/CollectionLazyResponse' }
+
+    # ---- Posts ----
+    PostLazyResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        description: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        author: { $ref: '#/components/schemas/ProfileLazyResponse' }
+        private: { type: boolean }
+        views: { type: integer, minimum: 0 }
+        slides:
+          type: array
+          items: { $ref: '#/components/schemas/PostSlideLazy' }
+        stats:
+          type: object
+          properties:
+            comments: { type: integer, minimum: 0 }
+            likes: { type: integer, minimum: 0 }
+    PostResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        description: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        author: { $ref: '#/components/schemas/ProfileLazyResponse' }
+        private: { type: boolean }
+        views: { type: integer, minimum: 0 }
+        slides:
+          type: array
+          items: { $ref: '#/components/schemas/PostSlideResponse' }
+        comments:
+          type: array
+          items: { $ref: '#/components/schemas/CommentResponse' }
+        likes: { type: integer, minimum: 0 }
+
+    # ---- Comments ----
+    CommentResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        author: { $ref: '#/components/schemas/ProfileLazyResponse' }
+        text: { type: string }
+        createdAt: { type: string, format: date-time }
+        likes: { type: integer, minimum: 0 }
+
+    # ---- Likes ----
+    LikeResponse:
+      type: object
+      properties:
+        owner: { $ref: '#/components/schemas/ProfileLazyResponse' }
+        createdAt: { type: string, format: date-time }
+    LikeLazyResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        collectionId: { type: string, format: uuid }
+        ownerId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+
+    # ---- Reposts ----
+    RepostLazyResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        post: { $ref: '#/components/schemas/PostLazyResponse' }
+
+    # ---- Collections ----
+    CollectionCreateRequest:
+      type: object
+      required: [name, posts]
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: string }
+        isPrivate: { type: boolean }
+        posts:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [publicId, position]
+            properties:
+              publicId: { type: string, format: uuid }
+              position: { type: integer }
+          description: Positions must be sequential starting at 1, no gaps or duplicates.
+    CollectionEditRequest:
+      type: object
+      description: At least one of name, description, or isPrivate must be provided.
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        isPrivate: { type: boolean }
+    CollectionPostsEditRequest:
+      type: object
+      required: [posts]
+      properties:
+        posts:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [publicId, position]
+            properties:
+              publicId:
+                type: string
+                format: uuid
+                description: The CollectionPost's own publicId (not the underlying Post's).
+              position: { type: integer }
+          description: Must include every post currently in the collection. Positions sequential starting at 1.
+    CollectionPostExtraLazy:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0 }
+        post:
+          type: object
+          properties:
+            publicId: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+            author:
+              type: object
+              properties:
+                publicId: { type: string, format: uuid }
+                nickname: { type: string }
+    ColPostResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0 }
+        post: { $ref: '#/components/schemas/PostLazyResponse' }
+    CollectionLazyResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        private: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        slides:
+          type: array
+          items: { $ref: '#/components/schemas/PostSlideLazy' }
+        likes: { type: integer, minimum: 0 }
+    CollectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/CollectionLazyResponse'
+        - type: object
+          properties:
+            owner: { $ref: '#/components/schemas/ProfileLazyResponse' }
+            posts:
+              type: array
+              items: { $ref: '#/components/schemas/ColPostResponse' }
+
+    # ---- Feed ----
+    HomeFeedItem:
+      oneOf:
+        - type: object
+          properties:
+            type: { type: string, enum: [POST] }
+            createdAt: { type: string, format: date-time }
+            post: { $ref: '#/components/schemas/PostLazyResponse' }
+        - type: object
+          properties:
+            type: { type: string, enum: [REPOST] }
+            createdAt: { type: string, format: date-time }
+            reposter: { $ref: '#/components/schemas/ProfileLazyResponse' }
+            post: { $ref: '#/components/schemas/PostLazyResponse' }
+        - type: object
+          properties:
+            type: { type: string, enum: [COLLECTION] }
+            createdAt: { type: string, format: date-time }
+            collection: { $ref: '#/components/schemas/CollectionLazyResponse' }
+      discriminator:
+        propertyName: type
+    ExploreItem:
+      oneOf:
+        - type: object
+          properties:
+            type: { type: string, enum: [POST] }
+            post: { $ref: '#/components/schemas/PostLazyResponse' }
+            convergence: { type: integer, minimum: 0 }
+        - type: object
+          properties:
+            type: { type: string, enum: [COLLECTION] }
+            collection: { $ref: '#/components/schemas/CollectionLazyResponse' }
+            convergence: { type: integer, minimum: 0 }
+      discriminator:
+        propertyName: type
+
+    # ---- Notifications ----
+    NotificationType:
+      type: string
+      enum:
+        - LIKE_POST
+        - LIKE_COMMENT
+        - LIKE_COLLECTION
+        - COMMENT_POST
+        - SHARE_POST
+        - NEW_POST
+        - NEW_COLLECTION
+        - FOLLOW_PROFILE
+    NotificationResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        actor: { $ref: '#/components/schemas/ProfileLazyResponse' }
+        type: { $ref: '#/components/schemas/NotificationType' }
+        postId: { type: string, format: uuid, nullable: true }
+        commentId: { type: string, format: uuid, nullable: true }
+        collectionId: { type: string, format: uuid, nullable: true }
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    # ---- Chats ----
+    MessageType:
+      type: string
+      enum: [TEXT, POST, COLLECTION, EVENT]
+    MessageCreateRequest:
+      oneOf:
+        - type: object
+          required: [type, text]
+          properties:
+            type: { type: string, enum: [TEXT] }
+            text: { type: string, minLength: 1 }
+        - type: object
+          required: [type, postId]
+          properties:
+            type: { type: string, enum: [POST] }
+            postId: { type: string, format: uuid }
+        - type: object
+          required: [type, collectionId]
+          properties:
+            type: { type: string, enum: [COLLECTION] }
+            collectionId: { type: string, format: uuid }
+      discriminator:
+        propertyName: type
+    MessageBasic:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        owner: { $ref: '#/components/schemas/ProfileLazyResponse' }
+        text: { type: string }
+        type: { $ref: '#/components/schemas/MessageType' }
+        createdAt: { type: string, format: date-time }
+        active: { type: boolean }
+    MessageResponse:
+      allOf:
+        - $ref: '#/components/schemas/MessageBasic'
+        - type: object
+          properties:
+            replyTo: { $ref: '#/components/schemas/MessageBasic' }
+            post: { $ref: '#/components/schemas/PostLazyResponse' }
+            collection: { $ref: '#/components/schemas/CollectionLazyResponse' }
+    ChatMember:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        profile: { $ref: '#/components/schemas/ProfileLazyResponse' }
+        isArchived: { type: boolean }
+    ChatLazyResponse:
+      type: object
+      properties:
+        publicId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        remoteMember: { $ref: '#/components/schemas/ChatMember' }
+        lastMessage: { $ref: '#/components/schemas/MessageBasic' }
+    ChatResponse:
+      allOf:
+        - $ref: '#/components/schemas/ChatLazyResponse'
+        - type: object
+          properties:
+            localMember: { $ref: '#/components/schemas/ChatMember' }
+            messages:
+              type: array
+              items: { $ref: '#/components/schemas/MessageResponse' }
