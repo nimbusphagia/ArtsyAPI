@@ -1,20 +1,20 @@
 # Knick Knacks
 
-KnickKnacks is a social platform made for artists to reclaim their space on the internet.
+Knick Knacks is a social platform made for artists to reclaim their space on the internet.
 
-## Why
+### Why
 
 Short form content and advertiser-first politics have quickly taken over most online spaces. In particular, creative spaces. To remain visible, creators are pushed out of doing what they love and forced to chase trends.
 
-KnickKnacks is built for creative people who just want to share their work and be seen for it.
+Knick Knacks is built for creative people who just want to share their work and be seen for it.
 
-## Creators first
+### Creators first
 
 Creators are our most important asset, that's why profiles are our most important feature. A profile doesn't need to be serious, but they are yours to build with care. 
 
 Every post, collection and repost adds to that image. Let yourself be seen by what you make,and the community you surround yourself with.
 
-## The Algorithm
+### The Algorithm
 
 There are two main feeds: Home and Explore. 
 
