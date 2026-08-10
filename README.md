@@ -2,18 +2,25 @@
 
 KnickKnacks is a social platform made for artists to reclaim their space on the internet.
 
-Among other things, short form content and advertiser-first politics have quickly taken over most spaces that once belonged to the people. In particular, artists of all sorts. We have been pushed out of doing what we love, forced to embrace the trend-seeking algorithm in order to gain any visibility. KnickKnacks aims to be a solution to that. 
+## Why
 
-We want to focus on creative people who just want to share something with the world, and give them a place where they are seen. And hopefully, create a community around that.  Knick Knacks is a creator-first platform for anyone who enjoys the craft as well as the whimsy of making art.
+Short form content and advertiser-first politics have quickly taken over most online spaces. In particular, creative spaces. To remain visible, creators are pushed out of doing what they love and forced to chase trends.
+
+KnickKnacks is built for creative people who just want to share their work and be seen for it.
 
 ## Creators first
 
-Creators are our most important asset, that's why profiles are our most important feature. KnickKnacks allow you to put out a curated image of yourself. And while a profile don't need to be serious, they are your online representation, take care in building it. 
-Every post, collection and repost will make up your image. Embrace it, and let yourself be seen by the things you put out as well as the community you surround yourself with.
+Creators are our most important asset, that's why profiles are our most important feature. A profile doesn't need to be serious, but they are yours to build with care. 
+
+Every post, collection and repost adds to that image. Let yourself be seen by what you make,and the community you surround yourself with.
 
 ## The Algorithm
 
-There are two main feeds: Home and Explore. The first one is a classic timeline with everything the people you follow is putting out. While the Explore feed is centered around what they are interacting with. The algorithm looks for what has the most attention from your circle, nothing more. If several people you follow like the same piece, that's what rises to the top.
+There are two main feeds: Home and Explore. 
+
+- **Home** is a classic timeline of everything you follow.
+
+- **Explore**  is driven by what your circle is engaging with. If several people you follow like or comment on the same piece, it rises to the top. 
 
 ## Tech Stack
 
